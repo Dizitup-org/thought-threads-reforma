@@ -129,42 +129,78 @@ export type Database = {
           collection: string
           created_at: string
           description: string | null
+          discount_percentage: number | null
+          discounted_price: number | null
           featured: boolean
           id: string
           image_file_path: string | null
           image_url: string | null
+          is_on_sale: boolean | null
           name: string
           price: number
           sizes: string[]
           stock: number
+          tags: string[] | null
           updated_at: string
         }
         Insert: {
           collection: string
           created_at?: string
           description?: string | null
+          discount_percentage?: number | null
+          discounted_price?: number | null
           featured?: boolean
           id?: string
           image_file_path?: string | null
           image_url?: string | null
+          is_on_sale?: boolean | null
           name: string
           price: number
           sizes?: string[]
           stock?: number
+          tags?: string[] | null
           updated_at?: string
         }
         Update: {
           collection?: string
           created_at?: string
           description?: string | null
+          discount_percentage?: number | null
+          discounted_price?: number | null
           featured?: boolean
           id?: string
           image_file_path?: string | null
           image_url?: string | null
+          is_on_sale?: boolean | null
           name?: string
           price?: number
           sizes?: string[]
           stock?: number
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sale_banners: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          message: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          message: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          message?: string
           updated_at?: string
         }
         Relationships: []
