@@ -1,12 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, ShoppingBag, Settings } from "lucide-react";
+import { Menu, X, ShoppingBag, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const { totalItems } = useCart();
+
+  useEffect(() => {
+    // Check initial auth state
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    };
+    
+    checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -56,6 +77,21 @@ const Header = () => {
                 <Settings className="h-5 w-5" />
               </Link>
             </Button>
+            
+            {user ? (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/profile">
+                  <User className="h-4 w-4 mr-2" />
+                  Profile
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm">
+                <Link to="/auth">
+                  Login
+                </Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile menu button */}

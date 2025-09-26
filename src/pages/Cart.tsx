@@ -1,19 +1,135 @@
+import { useState, useEffect } from 'react';
 import { useCart } from "@/hooks/useCart";
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Minus, Plus, Trash2, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from '@/hooks/use-toast';
+import AddressSelector from '@/components/AddressSelector';
 
 const Cart = () => {
-  const { items, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart();
+  const { items, removeFromCart, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
+  const [user, setUser] = useState<any>(null);
+  const [showAddressSelector, setShowAddressSelector] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const generateWhatsAppMessage = () => {
-    const orderDetails = items.map(item => 
-      `${item.name} (${item.size}) x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}`
-    ).join('\n');
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', session.user.id)
+        .single();
+      
+      setUser(profile);
+    }
+  };
+
+  const handleOrderViaWhatsApp = () => {
+    if (!user) {
+      toast({
+        title: "Please login first",
+        description: "You need to be logged in to place an order.",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
     
-    const message = `Hi REFORMA, I'd like to order:\n\n${orderDetails}\n\nTotal: $${totalPrice.toFixed(2)}`;
-    return `https://wa.me/1234567890?text=${encodeURIComponent(message)}`;
+    setShowAddressSelector(true);
+  };
+
+  const handleAddressSelected = async (address: any) => {
+    setSelectedAddress(address);
+    setShowAddressSelector(false);
+    
+    try {
+      // Save orders to Supabase (one row per item due to current schema)
+      const orderPromises = items.map(async (item) => {
+        const orderData = {
+          user_id: user.id,
+          address_id: address.id,
+          product_name: item.name,
+          collection: item.collection,
+          size: item.size,
+          products: {
+            id: item.id,
+            name: item.name,
+            size: item.size,
+            quantity: item.quantity,
+            price: item.price,
+            collection: item.collection
+          },
+          total_amount: item.price * item.quantity,
+          status: 'Pending'
+        };
+
+        return supabase.from('orders').insert(orderData);
+      });
+
+      const results = await Promise.all(orderPromises);
+      const errors = results.filter(result => result.error);
+      
+      if (errors.length > 0) {
+        throw new Error('Failed to save some orders');
+      }
+
+      // Generate WhatsApp message
+      const message = `
+🛍️ *New Order from Reforma Website*
+
+*Customer Details:*
+Name: ${user.name}
+Email: ${user.email}
+Phone: ${user.phone || 'Not provided'}
+
+*Delivery Address:*
+${address.address_line}
+${address.city}, ${address.state} - ${address.pincode}
+${address.country}
+
+*Products:*
+${items.map(item => `• ${item.name} (${item.size}) - Qty: ${item.quantity} - ₹${item.price * item.quantity}`).join('\n')}
+
+*Total Items:* ${totalItems}
+*Total Amount:* ₹${totalPrice}
+
+Order placed successfully! 🚀
+      `.trim();
+
+      const phoneNumber = "919999999999"; // Replace with actual admin WhatsApp number
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      
+      // Show success message
+      toast({
+        title: "You are a Reformer now! 🎉",
+        description: "Thank you for placing the order. Your order has been placed successfully.",
+        duration: 3000,
+      });
+
+      // Clear cart
+      clearCart();
+      
+      // Redirect to WhatsApp
+      setTimeout(() => {
+        window.open(whatsappUrl, '_blank');
+      }, 1000);
+      
+    } catch (error: any) {
+      toast({
+        title: "Error placing order",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   if (items.length === 0) {
@@ -55,7 +171,7 @@ const Cart = () => {
                       <h3 className="font-semibold text-primary">{item.name}</h3>
                       <p className="text-sm text-muted-foreground">{item.collection}</p>
                       <p className="text-sm text-muted-foreground">Size: {item.size}</p>
-                      <p className="font-medium text-primary">${item.price.toFixed(2)}</p>
+                      <p className="font-medium text-primary">₹{item.price.toFixed(2)}</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
@@ -96,18 +212,20 @@ const Cart = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>Items ({totalItems})</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                  <span>₹{totalPrice.toFixed(2)}</span>
                 </div>
                 <div className="border-t pt-4">
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span>${totalPrice.toFixed(2)}</span>
+                    <span>₹{totalPrice.toFixed(2)}</span>
                   </div>
                 </div>
-                <Button asChild className="w-full btn-elegant" size="lg">
-                  <a href={generateWhatsAppMessage()} target="_blank" rel="noopener noreferrer">
-                    Order via WhatsApp
-                  </a>
+                <Button 
+                  className="w-full btn-elegant" 
+                  size="lg"
+                  onClick={handleOrderViaWhatsApp}
+                >
+                  Order via WhatsApp
                 </Button>
                 <Button asChild variant="outline" className="w-full">
                   <Link to="/shop">
@@ -120,6 +238,16 @@ const Cart = () => {
           </div>
         </div>
       </div>
+
+      {/* Address Selector Modal */}
+      {user && (
+        <AddressSelector
+          isOpen={showAddressSelector}
+          onClose={() => setShowAddressSelector(false)}
+          onAddressSelected={handleAddressSelected}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };
