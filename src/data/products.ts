@@ -66,6 +66,7 @@ export const collections = [
 ];
 
 export const getFeaturedProducts = () => products.filter(p => p.featured);
+export const getProducts = () => products;
 export const getProductById = (id: string) => products.find(p => p.id === id);
 export const getProductsByCollection = (collection: string) => 
   products.filter(p => p.collection === collection);

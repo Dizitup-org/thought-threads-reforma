@@ -399,13 +399,31 @@ const Admin = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="image_url">Image URL</Label>
+                      <Label htmlFor="image_url">Image URL or Upload</Label>
                       <Input
                         id="image_url"
                         value={productForm.image_url}
                         onChange={(e) => setProductForm(prev => ({ ...prev, image_url: e.target.value }))}
-                        placeholder="https://example.com/image.jpg"
+                        placeholder="https://example.com/image.jpg or upload below"
                       />
+                      <div className="mt-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // For demo - in production this would upload to Supabase Storage
+                              const url = URL.createObjectURL(file);
+                              setProductForm(prev => ({ ...prev, image_url: url }));
+                            }
+                          }}
+                          className="text-sm text-muted-foreground"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Upload an image file or paste a URL above
+                        </p>
+                      </div>
                     </div>
 
                     <div>

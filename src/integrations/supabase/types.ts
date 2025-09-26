@@ -131,6 +131,7 @@ export type Database = {
           description: string | null
           featured: boolean
           id: string
+          image_file_path: string | null
           image_url: string | null
           name: string
           price: number
@@ -144,6 +145,7 @@ export type Database = {
           description?: string | null
           featured?: boolean
           id?: string
+          image_file_path?: string | null
           image_url?: string | null
           name: string
           price: number
@@ -157,11 +159,36 @@ export type Database = {
           description?: string | null
           featured?: boolean
           id?: string
+          image_file_path?: string | null
           image_url?: string | null
           name?: string
           price?: number
           sizes?: string[]
           stock?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: string | null
           updated_at?: string
         }
         Relationships: []

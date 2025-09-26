@@ -9,7 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Product {
   id: string;
@@ -77,14 +78,22 @@ const ProductCard = ({ product }: ProductCardProps) => {
               </SelectContent>
             </Select>
 
-            <Button
-              onClick={handleWhatsAppOrder}
-              className="w-full btn-elegant"
-              disabled={!selectedSize || product.stock === 0}
-            >
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Order via WhatsApp
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="outline" className="flex-1">
+                <Link to={`/product/${product.id}`}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Details
+                </Link>
+              </Button>
+              <Button
+                onClick={handleWhatsAppOrder}
+                className="flex-1 btn-elegant"
+                disabled={!selectedSize || product.stock === 0}
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Order
+              </Button>
+            </div>
           </div>
 
           {product.stock <= 5 && product.stock > 0 && (
