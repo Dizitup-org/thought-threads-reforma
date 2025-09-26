@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          address_line: string
+          city: string
+          country: string
+          created_at: string
+          id: string
+          is_default: boolean | null
+          pincode: string
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_line: string
+          city: string
+          country?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          pincode: string
+          state: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_line?: string
+          city?: string
+          country?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          pincode?: string
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addresses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -82,6 +129,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          address_id: string | null
           collection: string
           created_at: string
           customer_email: string | null
@@ -89,10 +137,14 @@ export type Database = {
           id: string
           product_id: string | null
           product_name: string
+          products: Json
           size: string
           status: string
+          total_amount: number
+          user_id: string | null
         }
         Insert: {
+          address_id?: string | null
           collection: string
           created_at?: string
           customer_email?: string | null
@@ -100,10 +152,14 @@ export type Database = {
           id?: string
           product_id?: string | null
           product_name: string
+          products?: Json
           size: string
           status?: string
+          total_amount?: number
+          user_id?: string | null
         }
         Update: {
+          address_id?: string | null
           collection?: string
           created_at?: string
           customer_email?: string | null
@@ -111,15 +167,32 @@ export type Database = {
           id?: string
           product_id?: string | null
           product_name?: string
+          products?: Json
           size?: string
           status?: string
+          total_amount?: number
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -225,6 +298,36 @@ export type Database = {
           id?: string
           setting_key?: string
           setting_value?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
           updated_at?: string
         }
         Relationships: []
