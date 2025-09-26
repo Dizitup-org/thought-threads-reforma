@@ -12,6 +12,10 @@ export interface Product {
   sizes: string[];
   description: string;
   featured: boolean;
+  tags?: string[];
+  discount_percentage?: number;
+  discounted_price?: number;
+  is_on_sale?: boolean;
 }
 
 export const products: Product[] = [

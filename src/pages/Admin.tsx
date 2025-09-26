@@ -28,6 +28,10 @@ interface Product {
   sizes: string[];
   description?: string;
   featured: boolean;
+  tags?: string[];
+  discount_percentage?: number;
+  discounted_price?: number;
+  is_on_sale?: boolean;
 }
 
 const Admin = () => {
@@ -43,7 +47,9 @@ const Admin = () => {
     sizes: [] as string[],
     description: "",
     featured: false,
-    image_url: ""
+    image_url: "",
+    tags: [] as string[],
+    discount_percentage: 0
   });
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [stats, setStats] = useState({
@@ -51,15 +57,35 @@ const Admin = () => {
     totalOrders: 0,
     emailSignups: 0
   });
+  const [saleBanners, setSaleBanners] = useState<any[]>([]);
+  const [bannerForm, setBannerForm] = useState({ message: "", is_active: true });
   const { toast } = useToast();
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+  const availableTags = ["New Arrival", "Winter Collection", "Discount", "Sale", "Limited Edition", "Bestseller"];
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchProducts();
       fetchCollections();
       fetchStats();
+      fetchSaleBanners();
+      
+      // Set up real-time subscription for products
+      const channel = supabase
+        .channel('products-changes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'products'
+        }, () => {
+          fetchProducts();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isAuthenticated]);
 
@@ -139,7 +165,9 @@ const Admin = () => {
         sizes: productForm.sizes,
         description: productForm.description,
         featured: productForm.featured,
-        image_url: productForm.image_url
+        image_url: productForm.image_url,
+        tags: productForm.tags,
+        discount_percentage: productForm.discount_percentage
       };
 
       let error;
@@ -207,7 +235,9 @@ const Admin = () => {
       sizes: product.sizes,
       description: product.description || "",
       featured: product.featured,
-      image_url: product.image_url || ""
+      image_url: product.image_url || "",
+      tags: product.tags || [],
+      discount_percentage: product.discount_percentage || 0
     });
     setEditingProduct(product.id);
   };
@@ -221,7 +251,9 @@ const Admin = () => {
       sizes: [],
       description: "",
       featured: false,
-      image_url: ""
+      image_url: "",
+      tags: [],
+      discount_percentage: 0
     });
     setEditingProduct(null);
   };
@@ -233,6 +265,79 @@ const Admin = () => {
         ? prev.sizes.filter(s => s !== size)
         : [...prev.sizes, size]
     }));
+  };
+
+  const toggleTag = (tag: string) => {
+    setProductForm(prev => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag]
+    }));
+  };
+
+  const fetchSaleBanners = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sale_banners')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setSaleBanners(data || []);
+    } catch (error) {
+      console.error('Error fetching sale banners:', error);
+    }
+  };
+
+  const handleBannerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const { error } = await supabase
+        .from('sale_banners')
+        .insert([bannerForm]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Banner created!",
+        description: "Sale banner has been added successfully.",
+      });
+
+      setBannerForm({ message: "", is_active: true });
+      fetchSaleBanners();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create banner. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleBannerStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('sale_banners')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Banner updated!",
+        description: "Banner status has been changed.",
+      });
+
+      fetchSaleBanners();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update banner.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!isAuthenticated) {
@@ -290,11 +395,12 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="emails">Email List</TabsTrigger>
+            <TabsTrigger value="banners">Sale Banners</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -444,6 +550,40 @@ const Admin = () => {
                     </div>
 
                     <div>
+                      <Label>Product Tags (Funky Badges)</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {availableTags.map(tag => (
+                          <Button
+                            key={tag}
+                            type="button"
+                            variant={productForm.tags.includes(tag) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleTag(tag)}
+                            className={productForm.tags.includes(tag) ? "bg-primary text-primary-foreground" : ""}
+                          >
+                            {tag}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="discount">Discount Percentage (%)</Label>
+                      <Input
+                        id="discount"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={productForm.discount_percentage}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, discount_percentage: parseInt(e.target.value) || 0 }))}
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Set to 0 for no discount. Discounted price will be calculated automatically.
+                      </p>
+                    </div>
+
+                    <div>
                       <Label htmlFor="description">Description</Label>
                       <Textarea
                         id="description"
@@ -541,6 +681,72 @@ const Admin = () => {
                 <p className="text-muted-foreground">Newsletter subscribers will appear here.</p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="banners" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Banner Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="serif-heading text-xl text-elegant">Create Sale Banner</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleBannerSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="banner-message">Banner Message</Label>
+                      <Input
+                        id="banner-message"
+                        value={bannerForm.message}
+                        onChange={(e) => setBannerForm(prev => ({ ...prev, message: e.target.value }))}
+                        placeholder="Flat 20% OFF on Winter Collection"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="banner-active"
+                        checked={bannerForm.is_active}
+                        onCheckedChange={(checked) => setBannerForm(prev => ({ ...prev, is_active: checked }))}
+                      />
+                      <Label htmlFor="banner-active">Active Banner</Label>
+                    </div>
+
+                    <Button type="submit" className="btn-elegant w-full">
+                      Create Banner
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Banners List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="serif-heading text-xl text-elegant">Active Banners</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {saleBanners.map(banner => (
+                      <div key={banner.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium">{banner.message}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Status: {banner.is_active ? 'Active' : 'Inactive'}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleBannerStatus(banner.id, banner.is_active)}
+                        >
+                          {banner.is_active ? 'Deactivate' : 'Activate'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

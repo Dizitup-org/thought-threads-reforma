@@ -20,6 +20,10 @@ interface Product {
   collection: string;
   stock: number;
   sizes: string[];
+  tags?: string[];
+  discount_percentage?: number;
+  discounted_price?: number;
+  is_on_sale?: boolean;
 }
 
 interface ProductCardProps {
@@ -49,10 +53,25 @@ const ProductCard = ({ product }: ProductCardProps) => {
             alt={product.name}
             className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-700"
           />
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 right-4 flex flex-col gap-2">
             <Badge variant="secondary" className="bg-card/90 text-primary border-border/50 backdrop-blur-sm">
               {product.collection}
             </Badge>
+            {product.tags && product.tags.map(tag => (
+              <Badge 
+                key={tag} 
+                className={`
+                  funky-tag text-xs font-bold backdrop-blur-sm transform -rotate-2 shadow-lg
+                  ${tag === 'Sale' || tag === 'Discount' ? 'bg-destructive text-destructive-foreground' : 
+                    tag === 'New Arrival' ? 'bg-green-500 text-white' :
+                    tag === 'Winter Collection' ? 'bg-blue-500 text-white' :
+                    tag === 'Limited Edition' ? 'bg-purple-500 text-white' :
+                    'bg-orange-500 text-white'}
+                `}
+              >
+                {tag}
+              </Badge>
+            ))}
           </div>
         </div>
       </CardContent>
@@ -61,7 +80,19 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <div className="w-full space-y-3">
           <div className="flex justify-between items-start">
             <h3 className="serif-heading text-xl font-semibold text-elegant">{product.name}</h3>
-            <p className="text-2xl font-bold text-primary">${product.price}</p>
+            <div className="text-right">
+              {product.is_on_sale ? (
+                <div className="space-y-1">
+                  <p className="text-lg line-through text-muted-foreground">${product.price}</p>
+                  <p className="text-2xl font-bold text-destructive">${product.discounted_price}</p>
+                  <p className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded-full">
+                    {product.discount_percentage}% OFF
+                  </p>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-primary">${product.price}</p>
+              )}
+            </div>
           </div>
           
           <div className="space-y-4">

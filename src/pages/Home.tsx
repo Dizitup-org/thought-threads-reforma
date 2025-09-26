@@ -2,11 +2,15 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
+import SaleBanner from "@/components/SaleBanner";
 import { getFeaturedProducts } from "@/data/products";
 import heroImage from "@/assets/hero-elegant.jpg";
 const Home = () => {
   const featuredProducts = getFeaturedProducts();
   return <div className="min-h-screen">
+      {/* Sale Banner */}
+      <SaleBanner />
+      
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
