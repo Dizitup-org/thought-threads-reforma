@@ -1,6 +1,6 @@
-import overthinkImage from "@/assets/product-overthink.jpg";
-import deepThoughtsImage from "@/assets/product-deep-thoughts.jpg";
-import introspectionImage from "@/assets/product-introspection.jpg";
+import elegantSageImage from "@/assets/product-elegant-sage.jpg";
+import elegantBrownImage from "@/assets/product-elegant-brown.jpg";
+import elegantCreamImage from "@/assets/product-elegant-cream.jpg";
 
 export interface Product {
   id: string;
@@ -17,51 +17,51 @@ export interface Product {
 export const products: Product[] = [
   {
     id: "1",
-    name: "OVERTHINK",
-    price: 35,
-    image: overthinkImage,
-    collection: "Mind Series",
+    name: "SAGE REFLECTION",
+    price: 85,
+    image: elegantSageImage,
+    collection: "Core Essentials",
     stock: 12,
     sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    description: "For those who turn thoughts into art. Embrace the beautiful chaos of an active mind.",
+    description: "Sophisticated simplicity in muted sage. For minds that seek clarity in complexity.",
     featured: true,
   },
   {
     id: "2",
-    name: "DEEP THOUGHTS",
-    price: 40,
-    image: deepThoughtsImage,
-    collection: "Mind Series",
+    name: "EARTH WISDOM",
+    price: 90,
+    image: elegantBrownImage,
+    collection: "Core Essentials",
     stock: 8,
     sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    description: "Dive into the depths of consciousness. Perfect for the contemplative soul.",
+    description: "Rich brown elegance meets conscious design. Grounded luxury for thoughtful souls.",
     featured: true,
   },
   {
     id: "3",
-    name: "INTROSPECTION",
-    price: 38,
-    image: introspectionImage,
-    collection: "Cosmic Collection",
+    name: "PURE THOUGHT",
+    price: 80,
+    image: elegantCreamImage,
+    collection: "Minimalist Series",
     stock: 15,
     sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    description: "Journey inward with cosmic style. Where philosophy meets fashion.",
+    description: "Clean cream canvas for profound expression. Where less becomes infinitely more.",
     featured: true,
   },
 ];
 
 export const collections = [
   {
-    id: "mind-series",
-    name: "Mind Series",
-    description: "Explore the depths of thought and consciousness",
-    products: products.filter(p => p.collection === "Mind Series"),
+    id: "core-essentials",
+    name: "Core Essentials",
+    description: "Timeless pieces that form the foundation of thoughtful wardrobes",
+    products: products.filter(p => p.collection === "Core Essentials"),
   },
   {
-    id: "cosmic-collection",
-    name: "Cosmic Collection",
-    description: "Where philosophy meets the cosmos",
-    products: products.filter(p => p.collection === "Cosmic Collection"),
+    id: "minimalist-series",
+    name: "Minimalist Series",
+    description: "Pure forms and clean lines for minds that appreciate subtle sophistication",
+    products: products.filter(p => p.collection === "Minimalist Series"),
   },
 ];
 

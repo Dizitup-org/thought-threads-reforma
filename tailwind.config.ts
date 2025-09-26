@@ -47,13 +47,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        neon: {
-          green: "hsl(var(--neon-glow))",
-          purple: "hsl(var(--glitch-primary))",
+        sage: {
+          accent: "hsl(var(--sage-accent))",
         },
-        cosmic: {
-          purple: "hsl(var(--primary))",
-          dark: "hsl(220 15% 3%)",
+        elegant: {
+          brown: "hsl(var(--primary))",
+          taupe: "hsl(var(--warm-taupe))",
         },
       },
       fontFamily: {
@@ -61,14 +60,14 @@ export default {
         body: "var(--font-body)",
       },
       backgroundImage: {
-        'gradient-cosmic': 'var(--gradient-cosmic)',
-        'gradient-neon': 'var(--gradient-neon)',
-        'gradient-dark': 'var(--gradient-dark)',
+        'gradient-elegant': 'var(--gradient-elegant)',
+        'gradient-warm': 'var(--gradient-warm)',
+        'gradient-sage': 'var(--gradient-sage)',
       },
       boxShadow: {
-        'neon': 'var(--shadow-neon)',
-        'cosmic': 'var(--shadow-cosmic)',
-        'deep': 'var(--shadow-deep)',
+        'elegant': 'var(--shadow-elegant)',
+        'soft': 'var(--shadow-soft)',
+        'crisp': 'var(--shadow-crisp)',
       },
       borderRadius: {
         lg: "var(--radius)",
