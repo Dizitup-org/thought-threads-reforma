@@ -11,29 +11,29 @@ All colors MUST be HSL.
   :root {
     /* Core Elegant Palette */
     --background: 40 20% 88%;     /* Warm Taupe #E5DCCD */
-    --foreground: 25 15% 35%;     /* Rich Dark Brown #5C4E43 */
+    --foreground: 25 18% 25%;     /* Darker Rich Brown for better contrast */
     
     /* Card System */
     --card: 0 0% 100%;            /* Pure White #FFFFFF */
-    --card-foreground: 25 15% 35%;
+    --card-foreground: 25 18% 25%;
     
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 25 15% 35%;
+    --popover-foreground: 25 18% 25%;
     
     /* Brand Colors - Elegant Theme */
-    --primary: 25 15% 35%;        /* Rich Dark Brown #5C4E43 */
+    --primary: 25 18% 25%;        /* Darker Rich Brown for contrast */
     --primary-foreground: 0 0% 100%;
     
     --secondary: 40 18% 82%;      /* Lighter Taupe */
-    --secondary-foreground: 25 15% 35%;
+    --secondary-foreground: 25 18% 25%;
     
     /* Sage Accent - Sparingly Used */
     --accent: 85 15% 55%;         /* Muted Sage Green #93A58E */
     --accent-foreground: 0 0% 100%;
     
     --muted: 40 15% 92%;
-    --muted-foreground: 25 15% 50%;
+    --muted-foreground: 25 18% 35%;
     
     /* Status Colors */
     --destructive: 0 84% 60%;

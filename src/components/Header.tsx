@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X, ShoppingBag, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/hooks/useCart";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { totalItems } = useCart();
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -38,15 +40,19 @@ const Header = () => {
 
           {/* Right side actions */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="relative hover:bg-accent/10">
-              <ShoppingBag className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                0
-              </span>
+            <Button asChild variant="ghost" size="icon" className="relative hover:bg-accent/10">
+              <Link to="/cart">
+                <ShoppingBag className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
             </Button>
             
             <Button asChild variant="ghost" size="icon" className="hover:bg-accent/10">
-              <Link to="/admin">
+              <Link to="/settings">
                 <Settings className="h-5 w-5" />
               </Link>
             </Button>
@@ -82,13 +88,27 @@ const Header = () => {
                   {item.name}
                 </Link>
               ))}
-              <div className="border-t border-border pt-2 mt-2">
+              <div className="border-t border-border pt-2 mt-2 space-y-1">
+                <Link
+                  to="/cart"
+                  className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Cart ({totalItems})
+                </Link>
                 <Link
                   to="/admin"
                   className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Admin Panel
+                </Link>
+                <Link
+                  to="/settings"
+                  className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Settings
                 </Link>
               </div>
             </div>
