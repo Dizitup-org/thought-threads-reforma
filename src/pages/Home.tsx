@@ -4,23 +4,19 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { getFeaturedProducts } from "@/data/products";
 import heroImage from "@/assets/hero-elegant.jpg";
-
 const Home = () => {
   const featuredProducts = getFeaturedProducts();
-
-  return (
-    <div className="min-h-screen">
+  return <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
+        backgroundImage: `url(${heroImage})`
+      }}>
           <div className="absolute inset-0 bg-background/20" />
         </div>
         
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
-          <h1 className="serif-heading text-6xl md:text-8xl font-bold mb-8 animate-fade-in-up text-elegant">
+          <h1 className="serif-heading text-6xl md:text-8xl mb-8 animate-fade-in-up text-elegant font-extrabold">
             REFORMA
           </h1>
           
@@ -70,15 +66,11 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProducts.map((product, index) => (
-              <div 
-                key={product.id} 
-                className="animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.15}s` }}
-              >
+            {featuredProducts.map((product, index) => <div key={product.id} className="animate-fade-in-up" style={{
+            animationDelay: `${index * 0.15}s`
+          }}>
                 <ProductCard product={product} />
-              </div>
-            ))}
+              </div>)}
           </div>
 
           <div className="text-center mt-16">
@@ -134,19 +126,13 @@ const Home = () => {
           </p>
           
           <div className="max-w-md mx-auto flex gap-3">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-6 py-4 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
-            />
+            <input type="email" placeholder="Enter your email" className="flex-1 px-6 py-4 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-foreground" />
             <Button className="btn-elegant px-8 py-4">
               Subscribe
             </Button>
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default Home;
