@@ -40,30 +40,32 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <Card className="product-card group overflow-hidden">
+    <Card className="product-card group overflow-hidden h-full">
       <CardContent className="p-0">
         <div className="relative overflow-hidden">
           <img
             src={product.image}
             alt={product.name}
-            className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-700"
           />
           <div className="absolute top-4 right-4">
-            <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
+            <Badge variant="secondary" className="bg-card/90 text-primary border-border/50 backdrop-blur-sm">
               {product.collection}
             </Badge>
           </div>
         </div>
       </CardContent>
 
-      <CardFooter className="p-6 space-y-4">
-        <div className="w-full space-y-2">
-          <h3 className="font-heading text-lg font-semibold">{product.name}</h3>
-          <p className="text-2xl font-bold text-primary">${product.price}</p>
+      <CardFooter className="p-6 space-y-4 flex-col items-start">
+        <div className="w-full space-y-3">
+          <div className="flex justify-between items-start">
+            <h3 className="serif-heading text-xl font-semibold text-elegant">{product.name}</h3>
+            <p className="text-2xl font-bold text-primary">${product.price}</p>
+          </div>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Select value={selectedSize} onValueChange={setSelectedSize}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full bg-input border-border">
                 <SelectValue placeholder="Select size" />
               </SelectTrigger>
               <SelectContent>
@@ -77,7 +79,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
             <Button
               onClick={handleWhatsAppOrder}
-              className="w-full btn-hero text-accent-foreground font-semibold"
+              className="w-full btn-elegant"
               disabled={!selectedSize || product.stock === 0}
             >
               <MessageCircle className="mr-2 h-4 w-4" />

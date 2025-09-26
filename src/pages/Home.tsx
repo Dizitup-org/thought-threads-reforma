@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { getFeaturedProducts } from "@/data/products";
-import heroImage from "@/assets/hero-image.jpg";
+import heroImage from "@/assets/hero-elegant.jpg";
 
 const Home = () => {
   const featuredProducts = getFeaturedProducts();
@@ -16,32 +16,31 @@ const Home = () => {
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${heroImage})` }}
         >
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-background/20" />
         </div>
         
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
-          <h1 className="font-heading text-5xl md:text-7xl font-bold mb-6 animate-fade-in-up">
-            <span className="glitch neon-text" data-text="THREADS OF">
-              THREADS OF
-            </span>
-            <br />
-            <span className="text-primary">THOUGHT</span>
+          <h1 className="serif-heading text-6xl md:text-8xl font-bold mb-8 animate-fade-in-up text-elegant">
+            REFORMA
           </h1>
           
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in-up [animation-delay:0.2s]">
-            Unisex streetwear for deep thinkers, introverts, and creative overthinkers. 
-            Where philosophy meets fashion.
+          <p className="text-2xl md:text-3xl text-primary mb-6 animate-fade-in-up [animation-delay:0.2s] font-light">
+            Fashion. Reimagined.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up [animation-delay:0.4s]">
-            <Button asChild size="lg" className="btn-hero text-accent-foreground font-semibold">
+          <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto animate-fade-in-up [animation-delay:0.4s] leading-relaxed">
+            Minimalist elegance for deep thinkers. Where sophisticated design meets conscious choices.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in-up [animation-delay:0.6s]">
+            <Button asChild size="lg" className="btn-elegant px-8 py-4 text-base">
               <Link to="/shop">
-                Shop Collection
+                Explore Collection
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
             
-            <Button asChild variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+            <Button asChild variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground px-8 py-4 text-base">
               <Link to="/about">
                 Our Philosophy
                 <Sparkles className="ml-2 h-5 w-5" />
@@ -50,23 +49,23 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Animated scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-pulse">
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-gentle-float">
           <div className="w-6 h-10 border-2 border-primary rounded-full flex justify-center">
             <div className="w-1 h-3 bg-primary rounded-full mt-2 animate-bounce"></div>
           </div>
         </div>
       </section>
 
-      {/* Featured Products */}
-      <section className="py-20 bg-gradient-cosmic">
+      {/* Featured Collections */}
+      <section className="py-24 section-divider">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4">
-              New <span className="text-primary">Drops</span>
+          <div className="text-center mb-20">
+            <h2 className="serif-heading text-4xl md:text-5xl font-bold mb-6 text-elegant">
+              New Arrivals
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Fresh designs for the thoughtful minds. Each piece tells a story of introspection and creativity.
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Thoughtfully crafted pieces that embody quiet luxury and conscious design.
             </p>
           </div>
 
@@ -75,15 +74,15 @@ const Home = () => {
               <div 
                 key={product.id} 
                 className="animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
+                style={{ animationDelay: `${index * 0.15}s` }}
               >
                 <ProductCard product={product} />
               </div>
             ))}
           </div>
 
-          <div className="text-center mt-12">
-            <Button asChild size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+          <div className="text-center mt-16">
+            <Button asChild size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground px-8">
               <Link to="/shop">
                 View All Products
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -93,23 +92,54 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Threads of Thought Story */}
+      <section className="py-24 bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="serif-heading text-4xl md:text-5xl font-bold mb-8 text-elegant">
+              Threads of Thought
+            </h2>
+            <div className="prose prose-xl max-w-none text-muted-foreground leading-relaxed space-y-6">
+              <p className="text-lg">
+                In a world saturated with noise, we create for the quiet minds. The deep thinkers who find beauty in simplicity, meaning in minimalism, and truth in authentic expression.
+              </p>
+              <p className="text-lg">
+                REFORMA represents the intersection of conscious design and sophisticated aesthetics. Each piece is thoughtfully crafted for those who understand that true luxury lies not in ostentation, but in the quiet confidence of knowing you've chosen well.
+              </p>
+              <p className="text-lg font-medium text-primary">
+                Fashion. Reimagined for the thinking mind.
+              </p>
+            </div>
+            
+            <div className="mt-12">
+              <Button asChild size="lg" className="btn-elegant px-8">
+                <Link to="/about">
+                  Discover Our Story
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Newsletter Section */}
-      <section className="py-20 bg-card">
+      <section className="py-24 bg-gradient-sage">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">
-            Join the <span className="text-primary">Thought Collective</span>
+          <h2 className="serif-heading text-3xl md:text-4xl font-bold mb-6 text-elegant">
+            Join the Thought Collective
           </h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Be the first to know about new drops, exclusive designs, and philosophical musings.
+          <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+            Be the first to discover new collections, exclusive insights, and the philosophy behind conscious fashion.
           </p>
           
-          <div className="max-w-md mx-auto flex gap-2">
+          <div className="max-w-md mx-auto flex gap-3">
             <input
               type="email"
               placeholder="Enter your email"
-              className="flex-1 px-4 py-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="flex-1 px-6 py-4 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
             />
-            <Button className="btn-hero text-accent-foreground font-semibold px-6">
+            <Button className="btn-elegant px-8 py-4">
               Subscribe
             </Button>
           </div>
