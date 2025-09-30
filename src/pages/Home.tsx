@@ -1,12 +1,80 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
-import { getFeaturedProducts } from "@/data/products";
+import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-elegant.jpg";
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image_url?: string;
+  collection: string;
+  stock: number;
+  sizes: string[];
+  description?: string;
+  featured: boolean;
+  tags?: string[];
+  discount_percentage?: number;
+  discounted_price?: number;
+  is_on_sale?: boolean;
+}
+
 const Home = () => {
-  const featuredProducts = getFeaturedProducts();
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    fetchFeaturedProducts();
+    
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('products-home-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'products'
+      }, () => {
+        fetchFeaturedProducts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchFeaturedProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('featured', true)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (error) throw error;
+      setFeaturedProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching featured products:', error);
+    }
+  };
+
+  const transformProductForCard = (product: Product) => ({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    image: product.image_url || '',
+    collection: product.collection,
+    stock: product.stock,
+    sizes: product.sizes,
+    tags: product.tags,
+    discount_percentage: product.discount_percentage,
+    discounted_price: product.discounted_price,
+    is_on_sale: product.is_on_sale
+  });
   return <div className="min-h-screen">
       {/* Sale Banner */}
       <SaleBanner />
@@ -73,7 +141,7 @@ const Home = () => {
             {featuredProducts.map((product, index) => <div key={product.id} className="animate-fade-in-up" style={{
             animationDelay: `${index * 0.15}s`
           }}>
-                <ProductCard product={product} />
+                <ProductCard product={transformProductForCard(product)} />
               </div>)}
           </div>
 

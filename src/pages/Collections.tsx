@@ -1,11 +1,86 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { collections } from "@/data/products";
+import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Sparkles } from "lucide-react";
 
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image_url?: string;
+  collection: string;
+}
+
+interface Collection {
+  id: string;
+  name: string;
+  description: string;
+  products: Product[];
+}
+
 const Collections = () => {
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCollections();
+  }, []);
+
+  const fetchCollections = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch all collections
+      const { data: collectionsData, error: collectionsError } = await supabase
+        .from('collections')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (collectionsError) throw collectionsError;
+
+      // Fetch all products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*');
+      
+      if (productsError) throw productsError;
+
+      // Group products by collection
+      const collectionsWithProducts = (collectionsData || []).map(collection => ({
+        id: collection.id,
+        name: collection.name,
+        description: collection.description || '',
+        products: (productsData || [])
+          .filter(p => p.collection === collection.name)
+          .map(p => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            image_url: p.image_url,
+            collection: p.collection
+          }))
+      }));
+
+      setCollections(collectionsWithProducts);
+    } catch (error) {
+      console.error('Error fetching collections:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-24 pb-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-xl text-muted-foreground">Loading collections...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen pt-24 pb-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -45,23 +120,25 @@ const Collections = () => {
                 </p>
 
                 {/* Preview Products */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  {collection.products.slice(0, 3).map((product) => (
-                    <div key={product.id} className="aspect-square overflow-hidden rounded-md">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  ))}
-                </div>
+                {collection.products.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {collection.products.slice(0, 3).map((product) => (
+                      <div key={product.id} className="aspect-square overflow-hidden rounded-md">
+                        <img
+                          src={product.image_url || ''}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   {collection.products.map((product) => (
                     <div key={product.id} className="flex justify-between items-center text-sm">
                       <span className="font-medium">{product.name}</span>
-                      <span className="text-primary font-bold">${product.price}</span>
+                      <span className="text-primary font-bold">₹{product.price}</span>
                     </div>
                   ))}
                 </div>

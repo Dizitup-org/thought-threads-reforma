@@ -40,7 +40,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
     }
 
     const message = `Hi Reforma, I'd like to order ${product.name} (${selectedSize}) from ${product.collection}.`;
-    const whatsappUrl = `https://wa.me/1234567890?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/919831681756?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, "_blank");
   };
 
@@ -83,14 +83,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <div className="text-right">
               {product.is_on_sale ? (
                 <div className="space-y-1">
-                  <p className="text-lg line-through text-muted-foreground">${product.price}</p>
-                  <p className="text-2xl font-bold text-destructive">${product.discounted_price}</p>
+                  <p className="text-lg line-through text-muted-foreground">₹{product.price}</p>
+                  <p className="text-2xl font-bold text-destructive">₹{product.discounted_price}</p>
                   <p className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded-full">
                     {product.discount_percentage}% OFF
                   </p>
                 </div>
               ) : (
-                <p className="text-2xl font-bold text-primary">${product.price}</p>
+                <p className="text-2xl font-bold text-primary">₹{product.price}</p>
               )}
             </div>
           </div>

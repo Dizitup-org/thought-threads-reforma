@@ -105,7 +105,7 @@ ${items.map(item => `• ${item.name} (${item.size}) - Qty: ${item.quantity} - �
 Order placed successfully! 🚀
       `.trim();
 
-      const phoneNumber = "919999999999"; // Replace with actual admin WhatsApp number
+      const phoneNumber = "919831681756"; // Admin WhatsApp number
       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
       
       // Show success message
