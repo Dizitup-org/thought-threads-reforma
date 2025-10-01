@@ -71,8 +71,8 @@ const Admin = () => {
       fetchStats();
       fetchSaleBanners();
       
-      // Set up real-time subscription for products
-      const channel = supabase
+      // Set up real-time subscriptions for all tables
+      const productsChannel = supabase
         .channel('products-changes')
         .on('postgres_changes', {
           event: '*',
@@ -80,11 +80,48 @@ const Admin = () => {
           table: 'products'
         }, () => {
           fetchProducts();
+          fetchStats();
+        })
+        .subscribe();
+
+      const bannersChannel = supabase
+        .channel('banners-changes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'sale_banners'
+        }, () => {
+          fetchSaleBanners();
+        })
+        .subscribe();
+
+      const ordersChannel = supabase
+        .channel('orders-changes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+        }, () => {
+          fetchStats();
+        })
+        .subscribe();
+
+      const emailsChannel = supabase
+        .channel('emails-changes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'email_signups'
+        }, () => {
+          fetchStats();
         })
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(productsChannel);
+        supabase.removeChannel(bannersChannel);
+        supabase.removeChannel(ordersChannel);
+        supabase.removeChannel(emailsChannel);
       };
     }
   }, [isAuthenticated]);
@@ -115,10 +152,23 @@ const Admin = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching products:', error);
+        toast({
+          title: "Error loading products",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
       setProducts(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching products:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load products",
+        variant: "destructive",
+      });
     }
   };
 
@@ -170,57 +220,67 @@ const Admin = () => {
         discount_percentage: productForm.discount_percentage
       };
 
-      let error;
+      let result;
       if (editingProduct) {
-        const { error: updateError } = await supabase
+        result = await supabase
           .from('products')
           .update(productData)
           .eq('id', editingProduct);
-        error = updateError;
       } else {
-        const { error: insertError } = await supabase
+        result = await supabase
           .from('products')
           .insert([productData]);
-        error = insertError;
       }
 
-      if (error) throw error;
+      if (result.error) {
+        console.error('Database error:', result.error);
+        throw new Error(result.error.message || 'Failed to save product');
+      }
 
       toast({
         title: editingProduct ? "Product updated!" : "Product created!",
-        description: "Changes have been saved successfully.",
+        description: "Changes have been saved and synced across all pages.",
       });
 
       resetForm();
-      fetchProducts();
-    } catch (error) {
+      // Products will auto-refresh via real-time subscription
+    } catch (error: any) {
+      console.error('Error saving product:', error);
       toast({
-        title: "Error",
-        description: "Failed to save product. Please try again.",
+        title: "Error saving product",
+        description: error.message || "Please check your input and try again.",
         variant: "destructive",
       });
     }
   };
 
   const deleteProduct = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) {
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw new Error(error.message);
+      }
 
       toast({
         title: "Product deleted",
-        description: "Product has been removed successfully.",
+        description: "Product has been removed and synced across all pages.",
       });
 
-      fetchProducts();
-    } catch (error) {
+      // Products will auto-refresh via real-time subscription
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete product.",
+        title: "Error deleting product",
+        description: error.message || "Failed to delete product.",
         variant: "destructive",
       });
     }
@@ -298,19 +358,23 @@ const Admin = () => {
         .from('sale_banners')
         .insert([bannerForm]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Banner error:', error);
+        throw new Error(error.message);
+      }
 
       toast({
         title: "Banner created!",
-        description: "Sale banner has been added successfully.",
+        description: "Sale banner has been added and is now live.",
       });
 
       setBannerForm({ message: "", is_active: true });
-      fetchSaleBanners();
-    } catch (error) {
+      // Banners will auto-refresh via real-time subscription
+    } catch (error: any) {
+      console.error('Error creating banner:', error);
       toast({
-        title: "Error",
-        description: "Failed to create banner. Please try again.",
+        title: "Error creating banner",
+        description: error.message || "Failed to create banner. Please try again.",
         variant: "destructive",
       });
     }
@@ -323,18 +387,22 @@ const Admin = () => {
         .update({ is_active: !currentStatus })
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Toggle banner error:', error);
+        throw new Error(error.message);
+      }
 
       toast({
         title: "Banner updated!",
-        description: "Banner status has been changed.",
+        description: `Banner is now ${!currentStatus ? 'active' : 'inactive'}.`,
       });
 
-      fetchSaleBanners();
-    } catch (error) {
+      // Banners will auto-refresh via real-time subscription
+    } catch (error: any) {
+      console.error('Error updating banner:', error);
       toast({
-        title: "Error",
-        description: "Failed to update banner.",
+        title: "Error updating banner",
+        description: error.message || "Failed to update banner.",
         variant: "destructive",
       });
     }
@@ -461,7 +529,7 @@ const Admin = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="price">Price ($)</Label>
+                        <Label htmlFor="price">Price (₹)</Label>
                         <Input
                           id="price"
                           type="number"
@@ -634,8 +702,13 @@ const Admin = () => {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            ${product.price} • {product.collection} • {product.stock} in stock
+                            ₹{product.price} • {product.collection} • {product.stock} in stock
                           </p>
+                          {product.discount_percentage > 0 && (
+                            <Badge variant="destructive" className="text-xs mt-1">
+                              {product.discount_percentage}% OFF
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex gap-2">
                           <Button
