@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { MessageCircle, Eye, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
@@ -36,8 +37,38 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [localProduct, setLocalProduct] = useState<Product>(product);
   const { addToCart } = useCart();
   const { toast } = useToast();
+
+  // Update local product when the prop changes (for real-time updates)
+  useEffect(() => {
+    setLocalProduct(product);
+  }, [product]);
+
+  // Set up real-time subscription for this specific product
+  useEffect(() => {
+    const channel = supabase
+      .channel(`product-${product.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'products',
+        filter: `id=eq.${product.id}`
+      }, (payload) => {
+        console.log(`Real-time update for product ${product.id}:`, payload);
+        // Update the local product state with the new data
+        setLocalProduct(prev => ({
+          ...prev,
+          ...payload.new
+        }));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [product.id]);
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -49,21 +80,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
       return;
     }
 
-    const price = product.is_on_sale && product.discounted_price ? product.discounted_price : product.price;
+    const price = localProduct.is_on_sale && localProduct.discounted_price ? localProduct.discounted_price : localProduct.price;
     
     addToCart({
-      id: product.id,
-      name: product.name,
+      id: localProduct.id,
+      name: localProduct.name,
       price: price,
       size: selectedSize,
-      collection: product.collection,
-      image_url: product.image,
-      gsm: product.gsm || 180
+      collection: localProduct.collection,
+      image_url: localProduct.image,
+      gsm: localProduct.gsm || 180
     });
 
     toast({
       title: "Added to cart!",
-      description: `${product.name} (${selectedSize}, ${product.gsm || 180} GSM) has been added to your cart.`,
+      description: `${localProduct.name} (${selectedSize}, ${localProduct.gsm || 180} GSM) has been added to your cart.`,
     });
   };
 
@@ -77,8 +108,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
       return;
     }
 
-    const price = product.is_on_sale && product.discounted_price ? product.discounted_price : product.price;
-    const message = `Hi Reforma, I'd like to order ${product.name} (${selectedSize}, ${product.gsm || 180} GSM) from ${product.collection}. Price: ₹${price}`;
+    const price = localProduct.is_on_sale && localProduct.discounted_price ? localProduct.discounted_price : localProduct.price;
+    const message = `Hi Reforma, I'd like to order ${localProduct.name} (${selectedSize}, ${localProduct.gsm || 180} GSM) from ${localProduct.collection}. Price: ₹${price}`;
     const whatsappUrl = `https://wa.me/919831681756?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, "_blank");
   };
@@ -91,8 +122,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <div className="w-full h-80 bg-muted animate-pulse" />
           )}
           <img
-            src={product.image}
-            alt={product.name}
+            src={localProduct.image}
+            alt={localProduct.name}
             className={`w-full h-80 object-cover transition-all duration-700 ${
               imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
             } group-hover:scale-110`}
@@ -100,9 +131,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
           />
           <div className="absolute top-4 right-4 flex flex-col gap-2">
             <Badge variant="secondary" className="bg-card/90 text-primary border-border/50 backdrop-blur-sm transition-all duration-300 hover:scale-105">
-              {product.collection}
+              {localProduct.collection}
             </Badge>
-            {product.tags && product.tags.map(tag => (
+            {localProduct.tags && localProduct.tags.map(tag => (
               <Badge 
                 key={tag} 
                 className={`
@@ -122,7 +153,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           {/* Quick view button */}
           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
             <Button asChild variant="outline" className="bg-white/90 hover:bg-white transition-all duration-300 hover:scale-105">
-              <Link to={`/product/${product.id}`}>
+              <Link to={`/product/${localProduct.id}`}>
                 <Eye className="mr-2 h-4 w-4" />
                 Quick View
               </Link>
@@ -135,19 +166,19 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <div className="w-full space-y-3">
           <div className="flex justify-between items-start">
             <h3 className="serif-heading text-xl font-semibold text-elegant group-hover:text-accent transition-colors duration-300">
-              {product.name}
+              {localProduct.name}
             </h3>
             <div className="text-right">
-              {product.is_on_sale ? (
+              {localProduct.is_on_sale ? (
                 <div className="space-y-1">
-                  <p className="text-lg line-through text-muted-foreground">₹{product.price}</p>
-                  <p className="text-2xl font-bold text-destructive">₹{product.discounted_price}</p>
+                  <p className="text-lg line-through text-muted-foreground">₹{localProduct.price}</p>
+                  <p className="text-2xl font-bold text-destructive">₹{localProduct.discounted_price}</p>
                   <p className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded-full transition-all duration-300 hover:scale-105">
-                    {product.discount_percentage}% OFF
+                    {localProduct.discount_percentage}% OFF
                   </p>
                 </div>
               ) : (
-                <p className="text-2xl font-bold text-primary">₹{product.price}</p>
+                <p className="text-2xl font-bold text-primary">₹{localProduct.price}</p>
               )}
             </div>
           </div>
@@ -158,7 +189,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 <SelectValue placeholder="Select size" />
               </SelectTrigger>
               <SelectContent>
-                {product.sizes.map((size) => (
+                {localProduct.sizes.map((size) => (
                   <SelectItem key={size} value={size}>
                     {size}
                   </SelectItem>
@@ -170,7 +201,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               <Button 
                 onClick={handleAddToCart}
                 className="flex-1 btn-elegant transition-all duration-300 hover:scale-105"
-                disabled={!selectedSize || product.stock === 0}
+                disabled={!selectedSize || localProduct.stock === 0}
               >
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 Add to Cart
@@ -179,7 +210,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 onClick={handleWhatsAppOrder}
                 className="flex-1 transition-all duration-300 hover:scale-105"
                 variant="outline"
-                disabled={!selectedSize || product.stock === 0}
+                disabled={!selectedSize || localProduct.stock === 0}
               >
                 <MessageCircle className="mr-2 h-4 w-4" />
                 Order Now
@@ -187,10 +218,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </div>
           </div>
 
-          {product.stock <= 5 && product.stock > 0 && (
-            <p className="text-sm text-destructive animate-pulse-subtle">Only {product.stock} left in stock</p>
+          {localProduct.stock <= 5 && localProduct.stock > 0 && (
+            <p className="text-sm text-destructive animate-pulse-subtle">Only {localProduct.stock} left in stock</p>
           )}
-          {product.stock === 0 && (
+          {localProduct.stock === 0 && (
             <p className="text-sm text-destructive font-semibold">Out of Stock</p>
           )}
         </div>

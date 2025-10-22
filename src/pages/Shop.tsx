@@ -52,17 +52,26 @@ const Shop = () => {
     fetchProducts();
     fetchCollections();
     
-    // Set up real-time subscription
+    // Set up real-time subscription with better error handling
     const channel = supabase
       .channel('products-shop-changes')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'products'
-      }, () => {
+      }, (payload) => {
+        console.log('Real-time product update received:', payload);
+        // Fetch updated products when changes occur
         fetchProducts();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to real-time product updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Error with real-time subscription');
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

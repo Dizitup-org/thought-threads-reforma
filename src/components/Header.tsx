@@ -185,6 +185,15 @@ const Header = () => {
                 >
                   Admin Panel
                 </Link>
+                {/* Development/test links */}
+                {import.meta.env.MODE === "development" && (
+                  <Link
+                    to="/database-test"
+                    className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
+                  >
+                    DB Test
+                  </Link>
+                )}
               </div>
             </div>
           </div>

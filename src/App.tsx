@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import ProductDetail from "./pages/ProductDetail";
+import DatabaseTestPage from "./pages/DatabaseTestPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const AppRoutes = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/database-test" element={<DatabaseTestPage />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

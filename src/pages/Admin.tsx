@@ -39,8 +39,7 @@ interface Product {
 }
 
 const Admin = () => {
-  // For development/testing, we'll bypass authentication
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<string[]>([]);
@@ -70,6 +69,9 @@ const Admin = () => {
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
   const availableTags = ["New Arrival", "Winter Collection", "Discount", "Sale", "Limited Edition", "Bestseller"];
+
+  // Check if we're in development mode
+  const isDevelopment = import.meta.env.MODE === "development";
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -151,6 +153,63 @@ const Admin = () => {
       });
     }
   }, [isAuthenticated]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // In development mode, allow access with any credentials
+    if (isDevelopment) {
+      setIsAuthenticated(true);
+      toast({
+        title: "Development Mode",
+        description: "Admin panel unlocked for testing.",
+      });
+      return;
+    }
+    
+    try {
+      // Use Supabase auth for proper authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginForm.email,
+        password: loginForm.password,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Check if user is admin by checking the admin_users table
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('id')
+        .eq('email', loginForm.email)
+        .single();
+      
+      if (adminError || !adminUser) {
+        // Sign out if not admin
+        await supabase.auth.signOut();
+        toast({
+          title: "Access Denied",
+          description: "You don't have admin privileges.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setIsAuthenticated(true);
+      toast({
+        title: "Welcome back!",
+        description: "Successfully logged in to admin panel.",
+      });
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid credentials. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Add a function to initialize with mock data when database is not available
   const initializeWithMockData = () => {
@@ -673,8 +732,58 @@ const Admin = () => {
     }
   };
 
-  // Removed the authentication check for development/testing
-  // The admin panel is now accessible without login
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen pt-24 pb-12 bg-gradient-warm">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-md">
+          <Card className="shadow-elegant">
+            <CardHeader className="text-center">
+              <CardTitle className="serif-heading text-2xl text-elegant">Admin Login</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={loginForm.email}
+                    onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="admin@reforma.com"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Enter password"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full btn-elegant">
+                  Login
+                </Button>
+              </form>
+              {isDevelopment && (
+                <p className="text-sm text-muted-foreground mt-4 text-center">
+                  Development mode: Any credentials will work
+                </p>
+              )}
+              {!isDevelopment && (
+                <p className="text-sm text-muted-foreground mt-4 text-center">
+                  Demo credentials: admin@reforma.com / admin123
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-24 pb-12 bg-gradient-warm">
