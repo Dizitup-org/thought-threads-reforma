@@ -187,12 +187,20 @@ const Header = () => {
                 </Link>
                 {/* Development/test links */}
                 {import.meta.env.MODE === "development" && (
-                  <Link
-                    to="/database-test"
-                    className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
-                  >
-                    DB Test
-                  </Link>
+                  <>
+                    <Link
+                      to="/database-test"
+                      className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
+                    >
+                      DB Test
+                    </Link>
+                    <Link
+                      to="/cart-test"
+                      className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
+                    >
+                      Cart Test
+                    </Link>
+                  </>
                 )}
               </div>
             </div>

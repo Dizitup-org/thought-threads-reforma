@@ -162,22 +162,22 @@ Order Details:
 Please confirm my order and provide estimated delivery date. Thank you!
     `.trim();
 
-    const phoneNumber = "919831681756"; // Admin WhatsApp number
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    // Use the provided QR code link
+    const qrCodeUrl = "https://ibb.co/pjspJh6P";
     
     // Show success message
     toast({
-      title: "Redirecting to WhatsApp",
-      description: "You'll be redirected to WhatsApp to confirm your order.",
+      title: "Redirecting to QR Code",
+      description: "You'll be redirected to the payment QR code.",
       duration: 3000,
     });
 
     // Clear cart
     clearCart();
     
-    // Redirect to WhatsApp after a short delay
+    // Redirect to QR code after a short delay
     setTimeout(() => {
-      window.open(whatsappUrl, '_blank');
+      window.open(qrCodeUrl, '_blank');
       navigate('/shop');
     }, 2000);
   };

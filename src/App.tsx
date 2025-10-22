@@ -20,6 +20,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import ProductDetail from "./pages/ProductDetail";
 import DatabaseTestPage from "./pages/DatabaseTestPage";
+import CartTestPage from "./pages/CartTestPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const AppRoutes = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/database-test" element={<DatabaseTestPage />} />
+        <Route path="/cart-test" element={<CartTestPage />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

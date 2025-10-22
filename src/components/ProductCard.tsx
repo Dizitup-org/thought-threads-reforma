@@ -184,18 +184,24 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </div>
           
           <div className="space-y-4">
-            <Select value={selectedSize} onValueChange={setSelectedSize}>
-              <SelectTrigger className="w-full bg-input border-border focus:ring-2 focus:ring-accent transition-all duration-300">
-                <SelectValue placeholder="Select size" />
-              </SelectTrigger>
-              <SelectContent>
-                {localProduct.sizes.map((size) => (
-                  <SelectItem key={size} value={size}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Size</label>
+              <Select value={selectedSize} onValueChange={setSelectedSize}>
+                <SelectTrigger className="w-full bg-input border-border focus:ring-2 focus:ring-accent transition-all duration-300">
+                  <SelectValue placeholder="Select size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {localProduct.sizes.map((size) => (
+                    <SelectItem key={size} value={size}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!selectedSize && (
+                <p className="text-xs text-muted-foreground">Please select a size to add to cart</p>
+              )}
+            </div>
 
             <div className="flex gap-2">
               <Button 
