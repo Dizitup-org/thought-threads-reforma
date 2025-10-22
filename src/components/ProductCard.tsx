@@ -206,7 +206,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <div className="flex gap-2">
               <Button 
                 onClick={handleAddToCart}
-                className="flex-1 btn-elegant transition-all duration-300 hover:scale-105"
+                className={`flex-1 btn-elegant transition-all duration-300 hover:scale-105 ${(!selectedSize || localProduct.stock === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={!selectedSize || localProduct.stock === 0}
               >
                 <ShoppingCart className="mr-2 h-4 w-4" />
@@ -214,7 +214,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               </Button>
               <Button
                 onClick={handleWhatsAppOrder}
-                className="flex-1 transition-all duration-300 hover:scale-105"
+                className={`flex-1 transition-all duration-300 hover:scale-105 ${(!selectedSize || localProduct.stock === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 variant="outline"
                 disabled={!selectedSize || localProduct.stock === 0}
               >
@@ -222,6 +222,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 Order Now
               </Button>
             </div>
+
           </div>
 
           {localProduct.stock <= 5 && localProduct.stock > 0 && (

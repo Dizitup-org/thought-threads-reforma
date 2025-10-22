@@ -709,26 +709,43 @@ const Admin = () => {
 
   const uploadImageToSupabase = async (file: File): Promise<string> => {
     try {
+      // Check if file is valid
+      if (!file) {
+        throw new Error("No file selected");
+      }
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("File size too large. Maximum size is 5MB.");
+      }
+      
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const filePath = `product-images/${fileName}`;
 
+      console.log("Uploading file:", file.name, "to path:", filePath);
+      
       const { error: uploadError } = await supabase.storage
         .from('product-images')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
-        throw uploadError;
+        console.error('Upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
       const { data: { publicUrl } } = supabase.storage
         .from('product-images')
         .getPublicUrl(filePath);
 
+      console.log("File uploaded successfully. Public URL:", publicUrl);
       return publicUrl;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      throw error;
+      throw new Error(error.message || "Failed to upload image. Please try again.");
     }
   };
 
@@ -953,6 +970,12 @@ const Admin = () => {
                             const file = e.target.files?.[0];
                             if (file) {
                               try {
+                                // Show uploading state
+                                toast({
+                                  title: "Uploading image...",
+                                  description: "Please wait while your image is being uploaded.",
+                                });
+                                
                                 // Upload to Supabase Storage
                                 const publicUrl = await uploadImageToSupabase(file);
                                 setProductForm(prev => ({ 
@@ -965,18 +988,25 @@ const Admin = () => {
                                   description: "The image has been uploaded and will be used for this product.",
                                 });
                               } catch (error: any) {
+                                console.error('Upload error:', error);
                                 toast({
                                   title: "Error uploading image",
                                   description: error.message || "Failed to upload image. Please try again.",
                                   variant: "destructive",
                                 });
                               }
+                            } else {
+                              toast({
+                                title: "No file selected",
+                                description: "Please select an image file to upload.",
+                                variant: "destructive",
+                              });
                             }
                           }}
                           className="text-sm text-muted-foreground"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
-                          Upload an image file or paste a URL above
+                          Upload an image file (max 5MB) or paste a URL above
                         </p>
                       </div>
                     </div>

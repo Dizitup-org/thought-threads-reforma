@@ -197,25 +197,32 @@ All colors MUST be HSL.
     transition: 0.5s;
   }
   
-  .btn-elegant:hover {
+  .btn-elegant:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: var(--shadow-deep), 0 8px 25px hsl(var(--accent) / 0.2);
     background: hsl(var(--accent) / 0.9);
   }
   
-  .btn-elegant:hover::before {
+  .btn-elegant:hover:not(:disabled)::before {
     left: 100%;
   }
   
-  .btn-elegant:active {
+  .btn-elegant:active:not(:disabled) {
     transform: translateY(0);
   }
   
-  .btn-elegant:focus {
+  .btn-elegant:focus:not(:disabled) {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
   
+  .btn-elegant:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: var(--shadow-crisp);
+  }
+
   /* Product Card - Elegant */
   .product-card {
     background: hsl(var(--card));
@@ -287,6 +294,13 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-deep);
   }
   
+  /* Button disabled states */
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
   /* Elegant Divider */
   .divider-elegant {
     position: relative;

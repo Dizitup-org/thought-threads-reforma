@@ -8,10 +8,12 @@ export const DatabaseTest = () => {
   const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "disconnected">("checking");
   const [testData, setTestData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [storageStatus, setStorageStatus] = useState<"checking" | "connected" | "disconnected">("checking");
   const { toast } = useToast();
 
   useEffect(() => {
     testConnection();
+    testStorageConnection();
   }, []);
 
   const testConnection = async () => {
@@ -38,6 +40,25 @@ export const DatabaseTest = () => {
         description: "Could not connect to Supabase database.",
         variant: "destructive",
       });
+    }
+  };
+
+  const testStorageConnection = async () => {
+    try {
+      setStorageStatus("checking");
+      // Test storage access by listing files in the product-images bucket
+      const { data, error } = await supabase.storage
+        .from('product-images')
+        .list('', {
+          limit: 1
+        });
+      
+      if (error) throw error;
+      
+      setStorageStatus("connected");
+    } catch (error) {
+      console.error("Storage connection error:", error);
+      setStorageStatus("disconnected");
     }
   };
 
@@ -96,9 +117,22 @@ export const DatabaseTest = () => {
               "bg-red-500"
             }`}></div>
             <span>
-              {connectionStatus === "checking" ? "Checking connection..." :
-               connectionStatus === "connected" ? "Connected to Supabase" :
-               "Disconnected"}
+              {connectionStatus === "checking" ? "Checking database connection..." :
+               connectionStatus === "connected" ? "Connected to Supabase Database" :
+               "Database Disconnected"}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${
+              storageStatus === "checking" ? "bg-yellow-500 animate-pulse" :
+              storageStatus === "connected" ? "bg-green-500" :
+              "bg-red-500"
+            }`}></div>
+            <span>
+              {storageStatus === "checking" ? "Checking storage connection..." :
+               storageStatus === "connected" ? "Connected to Supabase Storage" :
+               "Storage Disconnected"}
             </span>
           </div>
           
