@@ -25,9 +25,11 @@ interface Product {
   name: string;
   price: number;
   image_url?: string;
+  image_file_path?: string;
   collection: string;
   stock: number;
   sizes: string[];
+  gsm?: number;
   description?: string;
   featured: boolean;
   tags?: string[];
@@ -47,9 +49,11 @@ const Admin = () => {
     collection: "",
     stock: "",
     sizes: [] as string[],
+    gsm: 180,
     description: "",
     featured: false,
     image_url: "",
+    image_file_path: "",
     tags: [] as string[],
     discount_percentage: 0
   });
@@ -158,41 +162,34 @@ const Admin = () => {
       });
       
       if (error) {
-        // Fallback to demo authentication
-        if (loginForm.email === "admin@reforma.com" && loginForm.password === "admin123") {
-          setIsAuthenticated(true);
-          toast({
-            title: "Welcome back!",
-            description: "Successfully logged in to admin panel (demo mode).",
-          });
-        } else {
-          throw error;
-        }
-      } else {
-        // Check if user is admin
-        const { data: adminUser } = await supabase
-          .from('admin_users')
-          .select('id')
-          .eq('email', loginForm.email)
-          .single();
-        
-        if (adminUser) {
-          setIsAuthenticated(true);
-          toast({
-            title: "Welcome back!",
-            description: "Successfully logged in to admin panel.",
-          });
-        } else {
-          // Sign out if not admin
-          await supabase.auth.signOut();
-          toast({
-            title: "Access Denied",
-            description: "You don't have admin privileges.",
-            variant: "destructive",
-          });
-        }
+        throw error;
       }
+      
+      // Check if user is admin by checking the admin_users table
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('id')
+        .eq('email', loginForm.email)
+        .single();
+      
+      if (adminError || !adminUser) {
+        // Sign out if not admin
+        await supabase.auth.signOut();
+        toast({
+          title: "Access Denied",
+          description: "You don't have admin privileges.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setIsAuthenticated(true);
+      toast({
+        title: "Welcome back!",
+        description: "Successfully logged in to admin panel.",
+      });
     } catch (error: any) {
+      console.error('Login error:', error);
       toast({
         title: "Login Failed",
         description: error.message || "Invalid credentials. Please try again.",
@@ -212,6 +209,7 @@ const Admin = () => {
         collection: "Core Essentials",
         stock: 12,
         sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+        gsm: 180,
         description: "Sophisticated simplicity in muted sage. For minds that seek clarity in complexity.",
         featured: true,
         tags: ["New Arrival"],
@@ -227,6 +225,7 @@ const Admin = () => {
         collection: "Core Essentials",
         stock: 8,
         sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+        gsm: 210,
         description: "Rich brown elegance meets conscious design. Grounded luxury for thoughtful souls.",
         featured: true,
         tags: ["Bestseller"],
@@ -242,6 +241,7 @@ const Admin = () => {
         collection: "Minimalist Series",
         stock: 15,
         sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+        gsm: 220,
         description: "Clean cream canvas for profound expression. Where less becomes infinitely more.",
         featured: false,
         tags: ["Winter Collection"],
@@ -324,7 +324,14 @@ const Admin = () => {
         });
         return;
       }
-      setProducts(data || []);
+      
+      // Ensure all products have a default GSM value
+      const productsWithGsm = (data || []).map(product => ({
+        ...product,
+        gsm: (product as any).gsm || 180
+      }));
+      
+      setProducts(productsWithGsm);
     } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
@@ -376,9 +383,11 @@ const Admin = () => {
         collection: productForm.collection,
         stock: parseInt(productForm.stock),
         sizes: productForm.sizes,
+        gsm: productForm.gsm,
         description: productForm.description,
         featured: productForm.featured,
         image_url: productForm.image_url,
+        image_file_path: productForm.image_file_path,
         tags: productForm.tags,
         discount_percentage: productForm.discount_percentage,
         // Calculate discounted price if there's a discount
@@ -519,9 +528,11 @@ const Admin = () => {
       collection: product.collection,
       stock: product.stock.toString(),
       sizes: product.sizes,
+      gsm: product.gsm || 180,
       description: product.description || "",
       featured: product.featured,
       image_url: product.image_url || "",
+      image_file_path: product.image_file_path || "",
       tags: product.tags || [],
       discount_percentage: product.discount_percentage || 0
     });
@@ -535,9 +546,11 @@ const Admin = () => {
       collection: "",
       stock: "",
       sizes: [],
+      gsm: 180,
       description: "",
       featured: false,
       image_url: "",
+      image_file_path: "",
       tags: [],
       discount_percentage: 0
     });
@@ -678,6 +691,31 @@ const Admin = () => {
         description: error.message || "Failed to update banner.",
         variant: "destructive",
       });
+    }
+  };
+
+  const uploadImageToSupabase = async (file: File): Promise<string> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `product-images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
     }
   };
 
@@ -829,6 +867,37 @@ const Admin = () => {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="gsm">GSM (Grams per Square Meter)</Label>
+                        <Select 
+                          value={productForm.gsm.toString()} 
+                          onValueChange={(value) => setProductForm(prev => ({ ...prev, gsm: parseInt(value) }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select GSM" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="180">180 GSM</SelectItem>
+                            <SelectItem value="210">210 GSM</SelectItem>
+                            <SelectItem value="220">220 GSM</SelectItem>
+                            <SelectItem value="240">240 GSM</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="stock">Stock</Label>
+                        <Input
+                          id="stock"
+                          type="number"
+                          value={productForm.stock}
+                          onChange={(e) => setProductForm(prev => ({ ...prev, stock: e.target.value }))}
+                          placeholder=""
+                          required
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <Label htmlFor="collection">Collection</Label>
                       <Select 
@@ -860,12 +929,28 @@ const Admin = () => {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              // For demo - in production this would upload to Supabase Storage
-                              const url = URL.createObjectURL(file);
-                              setProductForm(prev => ({ ...prev, image_url: url }));
+                              try {
+                                // Upload to Supabase Storage
+                                const publicUrl = await uploadImageToSupabase(file);
+                                setProductForm(prev => ({ 
+                                  ...prev, 
+                                  image_url: publicUrl,
+                                  image_file_path: publicUrl.split('/').pop() || ''
+                                }));
+                                toast({
+                                  title: "Image uploaded successfully",
+                                  description: "The image has been uploaded and will be used for this product.",
+                                });
+                              } catch (error: any) {
+                                toast({
+                                  title: "Error uploading image",
+                                  description: error.message || "Failed to upload image. Please try again.",
+                                  variant: "destructive",
+                                });
+                              }
                             }
                           }}
                           className="text-sm text-muted-foreground"

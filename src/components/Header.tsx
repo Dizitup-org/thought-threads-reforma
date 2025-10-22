@@ -108,7 +108,18 @@ const Header = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center space-x-2">
+            <Button asChild variant="ghost" size="icon" className="relative hover:bg-accent/10 transition-all duration-300 hover:scale-110">
+              <Link to="/cart">
+                <ShoppingBag className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center animate-pulse-subtle">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+            </Button>
+            
             <Button
               variant="ghost"
               size="icon"
@@ -149,16 +160,30 @@ const Header = () => {
                   Cart ({totalItems})
                 </Link>
                 <Link
-                  to="/admin"
+                  to="/checkout"
                   className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
                 >
-                  Admin Panel
+                  Checkout
                 </Link>
                 <Link
                   to="/settings"
                   className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
                 >
                   Settings
+                </Link>
+                {user && (
+                  <Link
+                    to="/profile"
+                    className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
+                  >
+                    Profile
+                  </Link>
+                )}
+                <Link
+                  to="/admin"
+                  className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors duration-300"
+                >
+                  Admin Panel
                 </Link>
               </div>
             </div>

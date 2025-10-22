@@ -23,6 +23,7 @@ interface Product {
   collection: string;
   stock: number;
   sizes: string[];
+  gsm?: number;
   description?: string;
   featured: boolean;
   tags?: string[];
@@ -38,10 +39,14 @@ const Shop = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCollection, setSelectedCollection] = useState("all");
   const [selectedTag, setSelectedTag] = useState("all");
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedGsmRange, setSelectedGsmRange] = useState<[number, number]>([100, 300]);
   const [sortBy, setSortBy] = useState("name");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [collections, setCollections] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [availableSizes, setAvailableSizes] = useState<string[]>([]);
+  const [availableGsmValues, setAvailableGsmValues] = useState<number[]>([]);
 
   useEffect(() => {
     fetchProducts();
@@ -87,6 +92,18 @@ const Shop = () => {
       );
     }
 
+    // Size filter
+    if (selectedSizes.length > 0) {
+      filtered = filtered.filter(product => 
+        selectedSizes.some(size => product.sizes.includes(size))
+      );
+    }
+
+    // GSM filter
+    filtered = filtered.filter(product => 
+      product.gsm && product.gsm >= selectedGsmRange[0] && product.gsm <= selectedGsmRange[1]
+    );
+
     // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -108,7 +125,7 @@ const Shop = () => {
     });
 
     return filtered;
-  }, [products, searchTerm, selectedCollection, selectedTag, sortBy]);
+  }, [products, searchTerm, selectedCollection, selectedTag, selectedSizes, selectedGsmRange, sortBy]);
 
   useEffect(() => {
     setFilteredProducts(filterAndSortProducts);
@@ -122,12 +139,29 @@ const Shop = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setProducts(data || []);
+      
+      // Ensure all products have a default GSM value
+      const productsWithGsm = (data || []).map(product => ({
+        ...product,
+        gsm: (product as any).gsm || 180
+      }));
+      
+      setProducts(productsWithGsm);
       
       // Extract unique tags
       const allTags = data?.flatMap(p => p.tags || []) || [];
       const uniqueTags = [...new Set(allTags)];
       setTags(uniqueTags);
+      
+      // Extract unique sizes
+      const allSizes = data?.flatMap(p => p.sizes || []) || [];
+      const uniqueSizes = [...new Set(allSizes)].sort();
+      setAvailableSizes(uniqueSizes);
+      
+      // Extract unique GSM values
+      const allGsmValues = data?.map(p => (p as any).gsm || 180) || [];
+      const uniqueGsmValues = [...new Set(allGsmValues)].sort((a, b) => a - b);
+      setAvailableGsmValues(uniqueGsmValues);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
@@ -150,6 +184,20 @@ const Shop = () => {
     setSearchTerm("");
     setSelectedCollection("all");
     setSelectedTag("all");
+    setSelectedSizes([]);
+    setSelectedGsmRange([100, 300]);
+  };
+
+  const toggleSizeFilter = (size: string) => {
+    setSelectedSizes(prev => 
+      prev.includes(size) 
+        ? prev.filter(s => s !== size) 
+        : [...prev, size]
+    );
+  };
+
+  const handleGsmRangeChange = (min: number, max: number) => {
+    setSelectedGsmRange([min, max]);
   };
 
   const transformProductForCard = (product: Product) => ({
@@ -169,6 +217,8 @@ const Shop = () => {
   const activeFilters = [
     selectedCollection !== "all" && `Collection: ${selectedCollection}`,
     selectedTag !== "all" && `Tag: ${selectedTag}`,
+    selectedSizes.length > 0 && `Sizes: ${selectedSizes.join(', ')}`,
+    selectedGsmRange[0] > 100 || selectedGsmRange[1] < 300 && `GSM: ${selectedGsmRange[0]}-${selectedGsmRange[1]}`,
     searchTerm && `Search: "${searchTerm}"`
   ].filter(Boolean);
 
@@ -250,6 +300,59 @@ const Shop = () => {
                   <SelectItem value="newest">Newest First</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Size Filters */}
+            <div className="mb-4">
+              <h3 className="text-sm font-medium mb-2">Sizes</h3>
+              <div className="flex flex-wrap gap-2">
+                {availableSizes.map(size => (
+                  <Button
+                    key={size}
+                    variant={selectedSizes.includes(size) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleSizeFilter(size)}
+                    className={selectedSizes.includes(size) ? "btn-elegant" : ""}
+                  >
+                    {size}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* GSM Filters */}
+            <div className="mb-4">
+              <h3 className="text-sm font-medium mb-2">GSM (Fabric Weight)</h3>
+              <div className="flex items-center gap-4">
+                <span className="text-sm">100</span>
+                <Input
+                  type="range"
+                  min="100"
+                  max="300"
+                  step="10"
+                  value={selectedGsmRange[0]}
+                  onChange={(e) => handleGsmRangeChange(parseInt(e.target.value), selectedGsmRange[1])}
+                  className="flex-1"
+                />
+                <Input
+                  type="range"
+                  min="100"
+                  max="300"
+                  step="10"
+                  value={selectedGsmRange[1]}
+                  onChange={(e) => handleGsmRangeChange(selectedGsmRange[0], parseInt(e.target.value))}
+                  className="flex-1"
+                />
+                <span className="text-sm">300</span>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>Lightweight (100-180 GSM)</span>
+                <span>Medium (180-240 GSM)</span>
+                <span>Heavyweight (240-300 GSM)</span>
+              </div>
+              <div className="text-center text-sm font-medium mt-1">
+                {selectedGsmRange[0]} - {selectedGsmRange[1]} GSM
+              </div>
             </div>
 
             {/* Active Filters */}

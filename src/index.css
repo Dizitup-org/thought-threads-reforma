@@ -11,29 +11,29 @@ All colors MUST be HSL.
   :root {
     /* Core Elegant Palette */
     --background: 40 20% 88%;     /* Warm Taupe #E5DCCD */
-    --foreground: 25 18% 25%;     /* Darker Rich Brown for better contrast */
+    --foreground: 35 15% 30%;     /* Text #5C4E43 */
     
     /* Card System */
     --card: 0 0% 100%;            /* Pure White #FFFFFF */
-    --card-foreground: 25 18% 25%;
+    --card-foreground: 35 15% 30%;
     
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 25 18% 25%;
+    --popover-foreground: 35 15% 30%;
     
     /* Brand Colors - Elegant Theme */
-    --primary: 25 18% 25%;        /* Darker Rich Brown for contrast */
+    --primary: 35 15% 30%;        /* Text #5C4E43 */
     --primary-foreground: 0 0% 100%;
     
     --secondary: 40 18% 82%;      /* Lighter Taupe */
-    --secondary-foreground: 25 18% 25%;
+    --secondary-foreground: 35 15% 30%;
     
     /* Sage Accent - Sparingly Used */
     --accent: 85 15% 55%;         /* Muted Sage Green #93A58E */
     --accent-foreground: 0 0% 100%;
     
     --muted: 40 15% 92%;
-    --muted-foreground: 25 18% 35%;
+    --muted-foreground: 35 15% 40%;
     
     /* Status Colors */
     --destructive: 0 84% 60%;
@@ -42,7 +42,7 @@ All colors MUST be HSL.
     /* Borders & Inputs */
     --border: 40 15% 85%;
     --input: 0 0% 100%;
-    --ring: 25 15% 35%;
+    --ring: 35 15% 40%;
     
     /* Elegant Effects */
     --sage-accent: 85 15% 55%;
@@ -58,10 +58,10 @@ All colors MUST be HSL.
     --font-body: 'Inter', system-ui, sans-serif;
     
     /* Shadows - Soft & Refined */
-    --shadow-elegant: 0 4px 20px hsl(25 15% 35% / 0.08);
-    --shadow-soft: 0 2px 10px hsl(25 15% 35% / 0.05);
-    --shadow-crisp: 0 1px 3px hsl(25 15% 35% / 0.1);
-    --shadow-deep: 0 10px 30px hsl(25 15% 35% / 0.15);
+    --shadow-elegant: 0 4px 20px hsl(35 15% 30% / 0.08);
+    --shadow-soft: 0 2px 10px hsl(35 15% 30% / 0.05);
+    --shadow-crisp: 0 1px 3px hsl(35 15% 30% / 0.1);
+    --shadow-deep: 0 10px 30px hsl(35 15% 30% / 0.15);
     
     /* Animation Timings */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -80,24 +80,24 @@ All colors MUST be HSL.
   .dark {
     /* Keep same elegant theme */
     --background: 40 20% 88%;
-    --foreground: 25 15% 35%;
+    --foreground: 35 15% 30%;
     --card: 0 0% 100%;
-    --card-foreground: 25 15% 35%;
+    --card-foreground: 35 15% 30%;
     --popover: 0 0% 100%;
-    --popover-foreground: 25 15% 35%;
-    --primary: 25 15% 35%;
+    --popover-foreground: 35 15% 30%;
+    --primary: 35 15% 30%;
     --primary-foreground: 0 0% 100%;
     --secondary: 40 18% 82%;
-    --secondary-foreground: 25 15% 35%;
+    --secondary-foreground: 35 15% 30%;
     --accent: 85 15% 55%;
     --accent-foreground: 0 0% 100%;
     --muted: 40 15% 92%;
-    --muted-foreground: 25 15% 50%;
+    --muted-foreground: 35 15% 40%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 40 15% 85%;
     --input: 0 0% 100%;
-    --ring: 25 15% 35%;
+    --ring: 35 15% 40%;
   }
 }
 
@@ -193,7 +193,7 @@ All colors MUST be HSL.
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
     transition: 0.5s;
   }
   
@@ -209,6 +209,11 @@ All colors MUST be HSL.
   
   .btn-elegant:active {
     transform: translateY(0);
+  }
+  
+  .btn-elegant:focus {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
   
   /* Product Card - Elegant */

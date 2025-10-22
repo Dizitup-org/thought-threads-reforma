@@ -9,8 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageCircle, Eye } from "lucide-react";
+import { MessageCircle, Eye, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useCart } from "@/hooks/useCart";
+import { useToast } from "@/hooks/use-toast";
 
 interface Product {
   id: string;
@@ -20,6 +22,7 @@ interface Product {
   collection: string;
   stock: number;
   sizes: string[];
+  gsm?: number;
   tags?: string[];
   discount_percentage?: number;
   discounted_price?: number;
@@ -33,14 +36,49 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [imageLoaded, setImageLoaded] = useState(false);
+  const { addToCart } = useCart();
+  const { toast } = useToast();
 
-  const handleWhatsAppOrder = () => {
+  const handleAddToCart = () => {
     if (!selectedSize) {
-      alert("Please select a size first");
+      toast({
+        title: "Please select a size",
+        description: "Choose a size before adding to cart.",
+        variant: "destructive",
+      });
       return;
     }
 
-    const message = `Hi Reforma, I'd like to order ${product.name} (${selectedSize}) from ${product.collection}.`;
+    const price = product.is_on_sale && product.discounted_price ? product.discounted_price : product.price;
+    
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: price,
+      size: selectedSize,
+      collection: product.collection,
+      image_url: product.image,
+      gsm: product.gsm || 180
+    });
+
+    toast({
+      title: "Added to cart!",
+      description: `${product.name} (${selectedSize}, ${product.gsm || 180} GSM) has been added to your cart.`,
+    });
+  };
+
+  const handleWhatsAppOrder = () => {
+    if (!selectedSize) {
+      toast({
+        title: "Please select a size",
+        description: "Choose a size before ordering via WhatsApp.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const price = product.is_on_sale && product.discounted_price ? product.discounted_price : product.price;
+    const message = `Hi Reforma, I'd like to order ${product.name} (${selectedSize}, ${product.gsm || 180} GSM) from ${product.collection}. Price: ₹${price}`;
     const whatsappUrl = `https://wa.me/919831681756?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, "_blank");
   };
@@ -129,19 +167,22 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </Select>
 
             <div className="flex gap-2">
-              <Button asChild variant="outline" className="flex-1 transition-all duration-300 hover:scale-105">
-                <Link to={`/product/${product.id}`}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </Link>
-              </Button>
-              <Button
-                onClick={handleWhatsAppOrder}
+              <Button 
+                onClick={handleAddToCart}
                 className="flex-1 btn-elegant transition-all duration-300 hover:scale-105"
                 disabled={!selectedSize || product.stock === 0}
               >
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Add to Cart
+              </Button>
+              <Button
+                onClick={handleWhatsAppOrder}
+                className="flex-1 transition-all duration-300 hover:scale-105"
+                variant="outline"
+                disabled={!selectedSize || product.stock === 0}
+              >
                 <MessageCircle className="mr-2 h-4 w-4" />
-                Order
+                Order Now
               </Button>
             </div>
           </div>

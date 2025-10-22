@@ -7,6 +7,7 @@ interface CartItem {
   size: string;
   collection: string;
   image_url?: string;
+  gsm?: number;
   quantity: number;
 }
 
