@@ -23,6 +23,7 @@ interface Product {
   collection: string;
   stock: number;
   sizes: string[];
+  gsm?: number[];
   description?: string;
   featured: boolean;
   tags?: string[];
@@ -38,10 +39,16 @@ const Shop = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCollection, setSelectedCollection] = useState("all");
   const [selectedTag, setSelectedTag] = useState("all");
+  const [selectedSize, setSelectedSize] = useState("all");
+  const [selectedGsm, setSelectedGsm] = useState("all");
   const [sortBy, setSortBy] = useState("name");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [collections, setCollections] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [allGsms, setAllGsms] = useState<number[]>([]);
+
+  // Available GSM options as per requirements
+  const gsmOptions = [180, 210, 220, 240];
 
   useEffect(() => {
     fetchProducts();
@@ -66,7 +73,7 @@ const Shop = () => {
 
   useEffect(() => {
     filterAndSortProducts();
-  }, [products, searchTerm, selectedCollection, selectedTag, sortBy]);
+  }, [products, searchTerm, selectedCollection, selectedTag, selectedSize, selectedGsm, sortBy]);
 
   const fetchProducts = async () => {
     try {
@@ -82,6 +89,11 @@ const Shop = () => {
       const allTags = data?.flatMap(p => p.tags || []) || [];
       const uniqueTags = [...new Set(allTags)];
       setTags(uniqueTags);
+      
+      // Extract all GSM values
+      const allGsms = data?.flatMap(p => p.gsm || []) || [];
+      const uniqueGsms = [...new Set(allGsms)].sort((a, b) => a - b);
+      setAllGsms(uniqueGsms);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
@@ -123,6 +135,20 @@ const Shop = () => {
       );
     }
 
+    // Size filter
+    if (selectedSize !== "all") {
+      filtered = filtered.filter(product => 
+        product.sizes.includes(selectedSize)
+      );
+    }
+
+    // GSM filter
+    if (selectedGsm !== "all") {
+      filtered = filtered.filter(product => 
+        product.gsm?.includes(Number(selectedGsm))
+      );
+    }
+
     // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -154,6 +180,7 @@ const Shop = () => {
     collection: product.collection,
     stock: product.stock,
     sizes: product.sizes,
+    gsm: product.gsm,
     tags: product.tags,
     discount_percentage: product.discount_percentage,
     discounted_price: product.discounted_price,
@@ -167,7 +194,7 @@ const Shop = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-12 text-center">
-          <h1 className="serif-heading text-4xl md:text-5xl font-bold mb-4 text-elegant">
+          <h1 className="serif-heading text-4xl md:text-5xl font-bold mb-4 text-reforma-brown">
             Our Collection
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -184,21 +211,21 @@ const Shop = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-4">
               {/* Search */}
-              <div className="relative">
+              <div className="relative lg:col-span-2">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 input-reforma"
                 />
               </div>
 
               {/* Collection Filter */}
               <Select value={selectedCollection} onValueChange={setSelectedCollection}>
-                <SelectTrigger>
+                <SelectTrigger className="input-reforma">
                   <SelectValue placeholder="All Collections" />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,7 +240,7 @@ const Shop = () => {
 
               {/* Tag Filter */}
               <Select value={selectedTag} onValueChange={setSelectedTag}>
-                <SelectTrigger>
+                <SelectTrigger className="input-reforma">
                   <SelectValue placeholder="All Tags" />
                 </SelectTrigger>
                 <SelectContent>
@@ -226,42 +253,78 @@ const Shop = () => {
                 </SelectContent>
               </Select>
 
-              {/* Sort */}
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sort by" />
+              {/* Size Filter */}
+              <Select value={selectedSize} onValueChange={setSelectedSize}>
+                <SelectTrigger className="input-reforma">
+                  <SelectValue placeholder="All Sizes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="name">Name A-Z</SelectItem>
-                  <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="all">All Sizes</SelectItem>
+                  <SelectItem value="XS">XS</SelectItem>
+                  <SelectItem value="S">S</SelectItem>
+                  <SelectItem value="M">M</SelectItem>
+                  <SelectItem value="L">L</SelectItem>
+                  <SelectItem value="XL">XL</SelectItem>
+                  <SelectItem value="XXL">XXL</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* GSM Filter */}
+              <Select value={selectedGsm} onValueChange={setSelectedGsm}>
+                <SelectTrigger className="input-reforma">
+                  <SelectValue placeholder="All GSM" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All GSM</SelectItem>
+                  {gsmOptions.map(gsm => (
+                    <SelectItem key={gsm} value={gsm.toString()}>
+                      {gsm} GSM
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center justify-between">
+            {/* Sort and View Mode */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex gap-2">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-48 input-reforma">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name A-Z</SelectItem>
+                    <SelectItem value="price-low">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    <SelectItem value="newest">Newest First</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
-              <Badge variant="secondary">
-                {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
-              </Badge>
+              <div className="flex items-center gap-4">
+                <div className="flex gap-2">
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("grid")}
+                    className="btn-reforma"
+                  >
+                    <Grid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "list" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    className="btn-reforma"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <Badge variant="secondary" className="badge-reforma">
+                  {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>

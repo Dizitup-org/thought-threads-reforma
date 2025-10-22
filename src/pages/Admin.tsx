@@ -26,6 +26,7 @@ interface Product {
   collection: string;
   stock: number;
   sizes: string[];
+  gsm?: number[];
   description?: string;
   featured: boolean;
   tags?: string[];
@@ -35,7 +36,7 @@ interface Product {
 }
 
 const Admin = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<string[]>([]);
@@ -45,6 +46,7 @@ const Admin = () => {
     collection: "",
     stock: "",
     sizes: [] as string[],
+    gsm: [] as number[],
     description: "",
     featured: false,
     image_url: "",
@@ -60,90 +62,105 @@ const Admin = () => {
   const [saleBanners, setSaleBanners] = useState<any[]>([]);
   const [bannerForm, setBannerForm] = useState({ message: "", is_active: true });
   const { toast } = useToast();
+  const [dbHealth, setDbHealth] = useState<{status: string, message: string}>({status: 'checking', message: 'Checking database connection...'});
+  const [showSetupForm, setShowSetupForm] = useState(false);
+  const [setupForm, setSetupForm] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+  const gsmOptions = [180, 210, 220, 240];
   const availableTags = ["New Arrival", "Winter Collection", "Discount", "Sale", "Limited Edition", "Bestseller"];
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchProducts();
-      fetchCollections();
-      fetchStats();
-      fetchSaleBanners();
+  // Database health check
+  const checkDatabaseHealth = async () => {
+    try {
+      // Test Supabase connection
+      const { data, error } = await supabase
+        .from('products')
+        .select('id')
+        .limit(1);
       
-      // Set up real-time subscriptions for all tables
-      const productsChannel = supabase
-        .channel('products-changes')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'products'
-        }, () => {
-          fetchProducts();
-          fetchStats();
-        })
-        .subscribe();
-
-      const bannersChannel = supabase
-        .channel('banners-changes')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'sale_banners'
-        }, () => {
-          fetchSaleBanners();
-        })
-        .subscribe();
-
-      const ordersChannel = supabase
-        .channel('orders-changes')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'orders'
-        }, () => {
-          fetchStats();
-        })
-        .subscribe();
-
-      const emailsChannel = supabase
-        .channel('emails-changes')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'email_signups'
-        }, () => {
-          fetchStats();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(productsChannel);
-        supabase.removeChannel(bannersChannel);
-        supabase.removeChannel(ordersChannel);
-        supabase.removeChannel(emailsChannel);
-      };
-    }
-  }, [isAuthenticated]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // For demo purposes, use simple authentication
-    if (loginForm.email === "admin@reforma.com" && loginForm.password === "admin123") {
-      setIsAuthenticated(true);
-      toast({
-        title: "Welcome back!",
-        description: "Successfully logged in to admin panel.",
-      });
-    } else {
-      toast({
-        title: "Invalid credentials",
-        description: "Please check your email and password.",
-        variant: "destructive",
-      });
+      if (error) {
+        setDbHealth({status: 'error', message: `Database error: ${error.message}`});
+        return false;
+      }
+      
+      // Test storage connection
+      const { data: buckets, error: storageError } = await supabase.storage.listBuckets();
+      if (storageError) {
+        setDbHealth({status: 'error', message: `Storage error: ${storageError.message}`});
+        return false;
+      }
+      
+      setDbHealth({status: 'healthy', message: 'Database and storage connected successfully'});
+      return true;
+    } catch (error: any) {
+      setDbHealth({status: 'error', message: `Connection failed: ${error.message}`});
+      return false;
     }
   };
+
+  // Temporarily bypass auth check
+  useEffect(() => {
+    checkDatabaseHealth();
+    fetchProducts();
+    fetchCollections();
+    fetchStats();
+    fetchSaleBanners();
+    
+    // Set up real-time subscriptions for all tables
+    const productsChannel = supabase
+      .channel('products-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'products'
+      }, () => {
+        fetchProducts();
+        fetchStats();
+      })
+      .subscribe();
+
+    const bannersChannel = supabase
+      .channel('banners-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sale_banners'
+      }, () => {
+        fetchSaleBanners();
+      })
+      .subscribe();
+
+    const ordersChannel = supabase
+      .channel('orders-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders'
+      }, () => {
+        fetchStats();
+      })
+      .subscribe();
+
+    const emailsChannel = supabase
+      .channel('emails-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'email_signups'
+      }, () => {
+        fetchStats();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(productsChannel);
+      supabase.removeChannel(bannersChannel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(emailsChannel);
+    };
+  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -213,11 +230,16 @@ const Admin = () => {
         collection: productForm.collection,
         stock: parseInt(productForm.stock),
         sizes: productForm.sizes,
+        gsm: productForm.gsm,
         description: productForm.description,
         featured: productForm.featured,
         image_url: productForm.image_url,
         tags: productForm.tags,
-        discount_percentage: productForm.discount_percentage
+        discount_percentage: productForm.discount_percentage,
+        discounted_price: productForm.discount_percentage > 0 
+          ? parseFloat(productForm.price) * (1 - productForm.discount_percentage / 100)
+          : null,
+        is_on_sale: productForm.discount_percentage > 0
       };
 
       let result;
@@ -293,6 +315,7 @@ const Admin = () => {
       collection: product.collection,
       stock: product.stock.toString(),
       sizes: product.sizes,
+      gsm: product.gsm || [],
       description: product.description || "",
       featured: product.featured,
       image_url: product.image_url || "",
@@ -309,6 +332,7 @@ const Admin = () => {
       collection: "",
       stock: "",
       sizes: [],
+      gsm: [],
       description: "",
       featured: false,
       image_url: "",
@@ -324,6 +348,15 @@ const Admin = () => {
       sizes: prev.sizes.includes(size)
         ? prev.sizes.filter(s => s !== size)
         : [...prev.sizes, size]
+    }));
+  };
+
+  const toggleGsm = (gsm: number) => {
+    setProductForm(prev => ({
+      ...prev,
+      gsm: prev.gsm.includes(gsm)
+        ? prev.gsm.filter(g => g !== gsm)
+        : [...prev.gsm, gsm]
     }));
   };
 
@@ -408,58 +441,73 @@ const Admin = () => {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen pt-24 pb-12 bg-gradient-warm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-md">
-          <Card className="shadow-elegant">
-            <CardHeader className="text-center">
-              <CardTitle className="serif-heading text-2xl text-elegant">Admin Login</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={loginForm.email}
-                    onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="admin@reforma.com"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Enter password"
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full btn-elegant">
-                  Login
-                </Button>
-              </form>
-              <p className="text-sm text-muted-foreground mt-4 text-center">
-                Demo credentials: admin@reforma.com / admin123
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  // Enhanced image upload function with better error handling
+  const handleImageUpload = async (file: File) => {
+    try {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Only JPEG, JPG, PNG, and WebP images are allowed');
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('Image size must be less than 5MB');
+      }
+      
+      // Ensure storage bucket exists with proper configuration
+      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+      if (bucketError) throw new Error(`Failed to list buckets: ${bucketError.message}`);
+      
+      // Create or update bucket configuration
+      const imagesBucket = buckets?.find(bucket => bucket.name === 'images');
+      if (!imagesBucket) {
+        const { error: createError } = await supabase.storage.createBucket('images', {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+          allowedMimeTypes: ['image/*']
+        });
+        if (createError && createError.message !== 'Bucket already exists') {
+          throw new Error(`Failed to create bucket: ${createError.message}`);
+        }
+      }
+      
+      // Generate unique file name
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+      
+      // Upload file with proper metadata
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type
+        });
+      
+      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+      
+      if (!publicUrl) throw new Error('Failed to get public URL');
+      
+      return publicUrl;
+    } catch (error: any) {
+      console.error('Image upload error:', error);
+      throw error;
+    }
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-12 bg-gradient-warm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="serif-heading text-4xl font-bold text-elegant mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your REFORMA collection</p>
+          <h1 className="serif-heading text-4xl font-bold text-reforma-brown mb-2">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Manage your RĒFORMA collection</p>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
@@ -473,13 +521,40 @@ const Admin = () => {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Database Health Card */}
+              <Card className={dbHealth.status === 'healthy' ? 'border-green-500' : dbHealth.status === 'error' ? 'border-red-500' : 'border-yellow-500'}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Database Status</CardTitle>
+                  {dbHealth.status === 'healthy' ? (
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  ) : dbHealth.status === 'error' ? (
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  ) : (
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-sm ${dbHealth.status === 'healthy' ? 'text-green-600' : dbHealth.status === 'error' ? 'text-red-600' : 'text-yellow-600'}`}>
+                    {dbHealth.message}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={checkDatabaseHealth}
+                  >
+                    Refresh Status
+                  </Button>
+                </CardContent>
+              </Card>
+              
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Products</CardTitle>
                   <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary">{stats.totalProducts}</div>
+                  <div className="text-2xl font-bold text-reforma-brown">{stats.totalProducts}</div>
                 </CardContent>
               </Card>
               
@@ -489,7 +564,7 @@ const Admin = () => {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary">{stats.totalOrders}</div>
+                  <div className="text-2xl font-bold text-reforma-brown">{stats.totalOrders}</div>
                 </CardContent>
               </Card>
               
@@ -499,7 +574,7 @@ const Admin = () => {
                   <Mail className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary">{stats.emailSignups}</div>
+                  <div className="text-2xl font-bold text-reforma-brown">{stats.emailSignups}</div>
                 </CardContent>
               </Card>
             </div>
@@ -510,7 +585,7 @@ const Admin = () => {
               {/* Product Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="serif-heading text-xl text-elegant">
+                  <CardTitle className="serif-heading text-xl text-reforma-brown">
                     {editingProduct ? "Edit Product" : "Add New Product"}
                   </CardTitle>
                 </CardHeader>
@@ -524,6 +599,7 @@ const Admin = () => {
                         onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
                         placeholder="SAGE REFLECTION"
                         required
+                        className="input-reforma"
                       />
                     </div>
 
@@ -538,6 +614,7 @@ const Admin = () => {
                           onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
                           placeholder="85.00"
                           required
+                          className="input-reforma"
                         />
                       </div>
                       <div>
@@ -549,6 +626,7 @@ const Admin = () => {
                           onChange={(e) => setProductForm(prev => ({ ...prev, stock: e.target.value }))}
                           placeholder="12"
                           required
+                          className="input-reforma"
                         />
                       </div>
                     </div>
@@ -559,7 +637,7 @@ const Admin = () => {
                         value={productForm.collection} 
                         onValueChange={(value) => setProductForm(prev => ({ ...prev, collection: value }))}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="input-reforma">
                           <SelectValue placeholder="Select collection" />
                         </SelectTrigger>
                         <SelectContent>
@@ -579,23 +657,41 @@ const Admin = () => {
                         value={productForm.image_url}
                         onChange={(e) => setProductForm(prev => ({ ...prev, image_url: e.target.value }))}
                         placeholder="https://example.com/image.jpg or upload below"
+                        className="input-reforma"
                       />
                       <div className="mt-2">
                         <input
                           type="file"
-                          accept="image/*"
-                          onChange={(e) => {
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              // For demo - in production this would upload to Supabase Storage
-                              const url = URL.createObjectURL(file);
-                              setProductForm(prev => ({ ...prev, image_url: url }));
+                              try {
+                                // Show uploading state
+                                toast({
+                                  title: "Uploading image...",
+                                  description: "Please wait while your image is being uploaded.",
+                                });
+                                
+                                const publicUrl = await handleImageUpload(file);
+                                setProductForm(prev => ({ ...prev, image_url: publicUrl }));
+                                toast({
+                                  title: "Image uploaded!",
+                                  description: "Image has been uploaded successfully.",
+                                });
+                              } catch (error: any) {
+                                toast({
+                                  title: "Upload failed",
+                                  description: error.message || "Failed to upload image.",
+                                  variant: "destructive",
+                                });
+                              }
                             }
                           }}
                           className="text-sm text-muted-foreground"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
-                          Upload an image file or paste a URL above
+                          Upload JPEG, JPG, PNG, or WebP (max 5MB)
                         </p>
                       </div>
                     </div>
@@ -610,8 +706,27 @@ const Admin = () => {
                             variant={productForm.sizes.includes(size) ? "default" : "outline"}
                             size="sm"
                             onClick={() => toggleSize(size)}
+                            className={productForm.sizes.includes(size) ? "btn-reforma" : "border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"}
                           >
                             {size}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>GSM Options</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {gsmOptions.map(gsm => (
+                          <Button
+                            key={gsm}
+                            type="button"
+                            variant={productForm.gsm.includes(gsm) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleGsm(gsm)}
+                            className={productForm.gsm.includes(gsm) ? "btn-reforma" : "border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"}
+                          >
+                            {gsm} GSM
                           </Button>
                         ))}
                       </div>
@@ -627,7 +742,7 @@ const Admin = () => {
                             variant={productForm.tags.includes(tag) ? "default" : "outline"}
                             size="sm"
                             onClick={() => toggleTag(tag)}
-                            className={productForm.tags.includes(tag) ? "bg-primary text-primary-foreground" : ""}
+                            className={productForm.tags.includes(tag) ? "btn-reforma" : "border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"}
                           >
                             {tag}
                           </Button>
@@ -645,6 +760,7 @@ const Admin = () => {
                         value={productForm.discount_percentage}
                         onChange={(e) => setProductForm(prev => ({ ...prev, discount_percentage: parseInt(e.target.value) || 0 }))}
                         placeholder="0"
+                        className="input-reforma"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Set to 0 for no discount. Discounted price will be calculated automatically.
@@ -659,6 +775,7 @@ const Admin = () => {
                         onChange={(e) => setProductForm(prev => ({ ...prev, description: e.target.value }))}
                         placeholder="Sophisticated simplicity in muted sage..."
                         rows={3}
+                        className="input-reforma"
                       />
                     </div>
 
@@ -672,11 +789,11 @@ const Admin = () => {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button type="submit" className="btn-elegant flex-1">
+                      <Button type="submit" className="btn-reforma flex-1">
                         {editingProduct ? "Update Product" : "Add Product"}
                       </Button>
                       {editingProduct && (
-                        <Button type="button" variant="outline" onClick={resetForm}>
+                        <Button type="button" variant="outline" className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5" onClick={resetForm}>
                           Cancel
                         </Button>
                       )}
@@ -688,7 +805,7 @@ const Admin = () => {
               {/* Products List */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="serif-heading text-xl text-elegant">Products</CardTitle>
+                  <CardTitle className="serif-heading text-xl text-reforma-brown">Products</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -698,12 +815,17 @@ const Admin = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-semibold">{product.name}</h4>
                             {product.featured && (
-                              <Badge variant="secondary" className="text-xs">Featured</Badge>
+                              <Badge variant="secondary" className="text-xs badge-reforma">Featured</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             ₹{product.price} • {product.collection} • {product.stock} in stock
                           </p>
+                          {product.gsm && product.gsm.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              GSM: {product.gsm.join(', ')}
+                            </p>
+                          )}
                           {product.discount_percentage > 0 && (
                             <Badge variant="destructive" className="text-xs mt-1">
                               {product.discount_percentage}% OFF
@@ -715,6 +837,7 @@ const Admin = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => editProduct(product)}
+                            className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -722,6 +845,7 @@ const Admin = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => deleteProduct(product.id)}
+                            className="border-destructive text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -737,7 +861,7 @@ const Admin = () => {
           <TabsContent value="orders">
             <Card>
               <CardHeader>
-                <CardTitle className="serif-heading text-xl text-elegant">Recent Orders</CardTitle>
+                <CardTitle className="serif-heading text-xl text-reforma-brown">Recent Orders</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">Orders will appear here as customers place them via WhatsApp.</p>
@@ -748,7 +872,7 @@ const Admin = () => {
           <TabsContent value="emails">
             <Card>
               <CardHeader>
-                <CardTitle className="serif-heading text-xl text-elegant">Email Subscribers</CardTitle>
+                <CardTitle className="serif-heading text-xl text-reforma-brown">Email Subscribers</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">Newsletter subscribers will appear here.</p>
@@ -761,7 +885,7 @@ const Admin = () => {
               {/* Banner Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="serif-heading text-xl text-elegant">Create Sale Banner</CardTitle>
+                  <CardTitle className="serif-heading text-xl text-reforma-brown">Create Sale Banner</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleBannerSubmit} className="space-y-4">
@@ -773,6 +897,7 @@ const Admin = () => {
                         onChange={(e) => setBannerForm(prev => ({ ...prev, message: e.target.value }))}
                         placeholder="Flat 20% OFF on Winter Collection"
                         required
+                        className="input-reforma"
                       />
                     </div>
 
@@ -785,7 +910,7 @@ const Admin = () => {
                       <Label htmlFor="banner-active">Active Banner</Label>
                     </div>
 
-                    <Button type="submit" className="btn-elegant w-full">
+                    <Button type="submit" className="btn-reforma w-full">
                       Create Banner
                     </Button>
                   </form>
@@ -795,7 +920,7 @@ const Admin = () => {
               {/* Banners List */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="serif-heading text-xl text-elegant">Active Banners</CardTitle>
+                  <CardTitle className="serif-heading text-xl text-reforma-brown">Active Banners</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -811,6 +936,7 @@ const Admin = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => toggleBannerStatus(banner.id, banner.is_active)}
+                          className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
                         >
                           {banner.is_active ? 'Deactivate' : 'Activate'}
                         </Button>

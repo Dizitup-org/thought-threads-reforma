@@ -50,9 +50,10 @@ export default {
         sage: {
           accent: "hsl(var(--sage-accent))",
         },
-        elegant: {
+        reforma: {
           brown: "hsl(var(--primary))",
           taupe: "hsl(var(--warm-taupe))",
+          sage: "hsl(var(--accent))",
         },
       },
       fontFamily: {
@@ -91,10 +92,30 @@ export default {
             height: "0",
           },
         },
+        "fade-in-reforma": {
+          from: {
+            opacity: "0",
+            transform: "translateY(15px)",
+          },
+          to: {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+        },
+        "gentle-float": {
+          "0%, 100%": {
+            transform: "translateY(0)",
+          },
+          "50%": {
+            transform: "translateY(-5px)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in-reforma": "fade-in-reforma 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)",
+        "gentle-float": "gentle-float 3s ease-in-out infinite",
       },
     },
   },

@@ -205,6 +205,7 @@ export type Database = {
           discount_percentage: number | null
           discounted_price: number | null
           featured: boolean
+          gsm: number[] | null
           id: string
           image_file_path: string | null
           image_url: string | null
@@ -223,6 +224,7 @@ export type Database = {
           discount_percentage?: number | null
           discounted_price?: number | null
           featured?: boolean
+          gsm?: number[] | null
           id?: string
           image_file_path?: string | null
           image_url?: string | null
@@ -241,6 +243,7 @@ export type Database = {
           discount_percentage?: number | null
           discounted_price?: number | null
           featured?: boolean
+          gsm?: number[] | null
           id?: string
           image_file_path?: string | null
           image_url?: string | null
