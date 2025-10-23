@@ -16,39 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import type { Tables } from '@/integrations/supabase/types';
 
-interface UserProfile {
-  id: string;
-  auth_user_id: string;
-  name: string;
-  email: string;
-  phone: string;
-  username: string;
-  avatar_url: string;
-}
-
-interface Address {
-  id: string;
-  user_id: string;
-  label: string;
-  address_line: string;
-  city: string;
-  state: string;
-  pincode: string;
-  country: string;
-  is_default: boolean;
-  created_at: string;
-}
-
-interface Order {
-  id: string;
-  product_name: string;
-  size: string;
-  collection: string;
-  total_amount: number;
-  status: string;
-  created_at: string;
-  addresses?: Address;
+interface UserProfile extends Tables<'users'> {}
+interface Address extends Tables<'addresses'> {}
+interface Order extends Tables<'orders'> {
+  addresses?: Pick<Tables<'addresses'>, 'id' | 'address_line' | 'city' | 'state' | 'pincode' | 'country' | 'is_default'> | null;
 }
 
 export default function Profile() {
@@ -190,12 +163,43 @@ export default function Profile() {
     setIsUploading(true);
     
     try {
+      // Check if avatars bucket exists
+      try {
+        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+        if (bucketError) {
+          console.warn('Error listing buckets:', bucketError);
+        } else {
+          const avatarsBucket = buckets?.find(bucket => bucket.name === 'avatars');
+          
+          if (!avatarsBucket) {
+            // Try to create the bucket
+            const { error: createError } = await supabase.storage.createBucket('avatars', {
+              public: true
+            });
+            
+            if (createError) {
+              console.warn('Could not create avatars bucket:', createError);
+            } else {
+              console.log('Successfully created avatars bucket');
+            }
+          }
+        }
+      } catch (bucketError) {
+        console.warn('Error checking/creating avatars bucket:', bucketError);
+      }
+      
       // Upload file
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
       
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        // If it's a bucket not found error, provide a more helpful message
+        if (uploadError.message.includes('Bucket not found')) {
+          throw new Error('Storage bucket "avatars" not found. Please ensure the bucket exists in your Supabase Storage dashboard and is set as public.');
+        }
+        throw uploadError;
+      }
       
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
@@ -218,9 +222,10 @@ export default function Profile() {
         description: "Profile picture updated successfully",
       });
     } catch (error: any) {
+      console.error('Avatar upload error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to upload avatar",
+        description: error.message || "Failed to upload avatar. Please check that the 'avatars' bucket exists and is public in your Supabase dashboard.",
         variant: "destructive",
       });
     } finally {
@@ -358,7 +363,6 @@ export default function Profile() {
     try {
       // Delete user data from all tables
       await supabase.from('addresses').delete().eq('user_id', user.id);
-      await supabase.from('wishlist').delete().eq('user_id', user.id);
       await supabase.from('orders').delete().eq('user_id', user.id);
       await supabase.from('users').delete().eq('id', user.id);
       
@@ -606,7 +610,7 @@ export default function Profile() {
                                 onClick={() => {
                                   setEditingAddress(address);
                                   setNewAddress({
-                                    label: address.label,
+                                    label: address.label || '',
                                     address_line: address.address_line,
                                     city: address.city,
                                     state: address.state,

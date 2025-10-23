@@ -600,6 +600,31 @@ const Admin = () => {
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const filePath = `products/${fileName}`;
       
+      // Check if images bucket exists, create it if not
+      try {
+        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+        if (bucketError) {
+          console.warn('Error listing buckets:', bucketError);
+        } else {
+          const imagesBucket = buckets?.find(bucket => bucket.name === 'images');
+          
+          if (!imagesBucket) {
+            // Try to create the bucket
+            const { error: createError } = await supabase.storage.createBucket('images', {
+              public: true
+            });
+            
+            if (createError) {
+              console.warn('Could not create images bucket:', createError);
+            } else {
+              console.log('Successfully created images bucket');
+            }
+          }
+        }
+      } catch (bucketError) {
+        console.warn('Error checking/creating images bucket:', bucketError);
+      }
+      
       // Try to upload file using admin client for full permissions
       const adminClient = getAdminClient();
       const { data: uploadData, error: uploadError } = adminClient

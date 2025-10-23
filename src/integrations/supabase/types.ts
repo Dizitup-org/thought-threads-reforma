@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           id: string
           is_default: boolean | null
+          label: string | null
           pincode: string
           state: string
           updated_at: string
@@ -34,6 +35,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_default?: boolean | null
+          label?: string | null
           pincode: string
           state: string
           updated_at?: string
@@ -46,6 +48,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_default?: boolean | null
+          label?: string | null
           pincode?: string
           state?: string
           updated_at?: string
@@ -362,30 +365,36 @@ export type Database = {
       users: {
         Row: {
           auth_user_id: string
+          avatar_url: string | null
           created_at: string
           email: string
           id: string
           name: string
           phone: string | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           auth_user_id: string
+          avatar_url?: string | null
           created_at?: string
           email: string
           id?: string
           name: string
           phone?: string | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           auth_user_id?: string
+          avatar_url?: string | null
           created_at?: string
           email?: string
           id?: string
           name?: string
           phone?: string | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }

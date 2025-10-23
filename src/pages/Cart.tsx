@@ -146,15 +146,6 @@ const Cart = () => {
           customer_name: customerName,
           customer_email: customerEmail,
           customer_phone: customerPhone,
-          products: {
-            id: item.id,
-            name: item.name,
-            size: item.size,
-            gsm: item.gsm,
-            quantity: item.quantity,
-            price: item.price,
-            collection: item.collection
-          },
           total_amount: item.price * item.quantity,
           status: 'Pending'
         };
