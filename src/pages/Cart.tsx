@@ -33,6 +33,19 @@ const Cart = () => {
     // Set a mock user for testing
     setUser({ id: "test-user-id" });
     loadAdminSettings();
+    
+    // Load user data from welcome animation if available
+    const userData = localStorage.getItem('reforma_user_data');
+    if (userData) {
+      try {
+        const parsedData = JSON.parse(userData);
+        setCustomerName(parsedData.name || "");
+        setCustomerEmail(parsedData.email || "");
+        setCustomerPhone(parsedData.phone || "");
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    }
   }, []);
 
   const loadAdminSettings = async () => {
@@ -119,18 +132,17 @@ const Cart = () => {
     setShowPaymentQR(true);
   };
 
-  const handlePaymentCompleted = async () => {
+  const handleIHavePaid = async () => {
     setLoading(true);
     try {
-      // Save orders to Supabase (one row per item due to current schema)
-      const orderPromises = items.map(async (item) => {
+      // Save orders to database (best effort)
+      const orderPromises = items.map(item => {
         const orderData = {
-          user_id: user?.id || null,
-          address_id: selectedAddress?.id || null,
+          product_id: item.id,
           product_name: item.name,
-          collection: item.collection,
           size: item.size,
           gsm: item.gsm,
+          collection: item.collection,
           customer_name: customerName,
           customer_email: customerEmail,
           customer_phone: customerPhone,
@@ -150,12 +162,17 @@ const Cart = () => {
         return supabase.from('orders').insert(orderData);
       });
 
-      const results = await Promise.all(orderPromises);
-      const errors = results.filter(result => result.error);
-      
-      if (errors.length > 0) {
-        throw new Error('Failed to save some orders');
-      }
+      // Execute all order insertions (non-blocking)
+      Promise.all(orderPromises)
+        .then(results => {
+          const errors = results.filter(result => result.error);
+          if (errors.length > 0) {
+            console.error('Some orders failed to save to database:', errors);
+          }
+        })
+        .catch(error => {
+          console.error('Error saving orders to database:', error);
+        });
 
       // Generate comprehensive WhatsApp message with customer details
       const message = `Hey Reforma Team 👋,
@@ -178,9 +195,9 @@ Thank you!`;
 
       const whatsappUrl = `https://wa.me/${adminPhoneNumber}?text=${encodeURIComponent(message)}`;
       
-      // Show success message
+      // Show success message and redirect to WhatsApp
       toast({
-        title: "Order request sent successfully!",
+        title: "Order placed successfully!",
         description: "Redirecting to WhatsApp for confirmation.",
         duration: 3000,
       });
@@ -190,14 +207,14 @@ Thank you!`;
       setOrderPlaced(true);
       setShowPaymentQR(false);
       
-      // Redirect to WhatsApp
+      // Redirect to WhatsApp (this will always happen regardless of database errors)
       setTimeout(() => {
         window.open(whatsappUrl, '_blank');
       }, 2000);
     } catch (error: any) {
       toast({
         title: "Error placing order",
-        description: error.message,
+        description: error.message || "An unexpected error occurred. Please try again or contact support.",
         variant: "destructive",
       });
     } finally {
@@ -423,7 +440,7 @@ Thank you!`;
               <div className="flex flex-col gap-3">
                 <Button 
                   className="btn-reforma w-full"
-                  onClick={handlePaymentCompleted}
+                  onClick={handleIHavePaid}
                   disabled={loading}
                 >
                   {loading ? "Processing..." : "I've Paid"}

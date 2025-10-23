@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -20,11 +24,29 @@ export default function Auth() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/profile');
+        // Check if admin
+        const { data: admin } = await supabase
+          .from('admin_users')
+          .select('*')
+          .eq('email', session.user.email)
+          .single();
+        
+        if (admin) {
+          navigate('/admin');
+        } else {
+          navigate('/profile');
+        }
       }
     };
     checkUser();
-  }, [navigate]);
+    
+    // Check if admin login was requested
+    const params = new URLSearchParams(location.search);
+    if (params.get('admin') === 'true') {
+      setIsAdminLogin(true);
+      setIsLogin(true);
+    }
+  }, [navigate, location]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,24 +54,61 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         
         if (error) throw error;
         
+        // Check if admin user
+        const { data: admin } = await supabase
+          .from('admin_users')
+          .select('*')
+          .eq('email', data.user?.email)
+          .single();
+        
+        if (isAdminLogin && !admin) {
+          // Not an admin user
+          await supabase.auth.signOut();
+          throw new Error('Admin access required');
+        }
+        
         toast({
           title: "Welcome back!",
           description: "You have successfully logged in.",
         });
-        navigate('/profile');
+        
+        if (admin) {
+          navigate('/admin');
+        } else {
+          // Create user profile if it doesn't exist
+          const { data: existingProfile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('auth_user_id', data.user?.id)
+            .single();
+          
+          if (!existingProfile) {
+            await supabase
+              .from('users')
+              .insert([
+                {
+                  auth_user_id: data.user?.id,
+                  email: data.user?.email,
+                  name: data.user?.user_metadata?.full_name || name,
+                }
+              ]);
+          }
+          
+          navigate('/profile');
+        }
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}/profile`,
             data: {
               full_name: name,
             }
@@ -58,15 +117,31 @@ export default function Auth() {
         
         if (error) throw error;
         
+        // Create user profile
+        if (data.user) {
+          await supabase
+            .from('users')
+            .insert([
+              {
+                auth_user_id: data.user.id,
+                email: data.user.email,
+                name: name,
+              }
+            ]);
+        }
+        
         toast({
           title: "Account created!",
           description: "Please check your email to confirm your account.",
         });
+        
+        // Switch to login form
+        setIsLogin(true);
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "An error occurred during authentication",
         variant: "destructive",
       });
     } finally {
@@ -79,18 +154,20 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">
-            {isLogin ? 'Welcome Back' : 'Join Reforma'}
+            {isAdminLogin ? 'Admin Login' : (isLogin ? 'Welcome Back' : 'Join Reforma')}
           </CardTitle>
           <CardDescription>
-            {isLogin 
-              ? 'Sign in to your account to continue shopping' 
-              : 'Create an account to start your fashion journey'
+            {isAdminLogin 
+              ? 'Access the admin dashboard' 
+              : (isLogin 
+                ? 'Sign in to your account to continue shopping' 
+                : 'Create an account to start your fashion journey')
             }
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
-            {!isLogin && (
+            {!isLogin && !isAdminLogin && (
               <div>
                 <Input
                   type="text"
@@ -110,30 +187,61 @@ export default function Auth() {
                 required
               />
             </div>
-            <div>
+            <div className="relative">
               <Input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
               />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
             </Button>
           </form>
           
+          {!isAdminLogin && (
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                {isLogin 
+                  ? "Don't have an account? Sign up" 
+                  : "Already have an account? Sign in"
+                }
+              </button>
+            </div>
+          )}
+          
           <div className="mt-4 text-center">
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsAdminLogin(!isAdminLogin);
+                setIsLogin(true);
+              }}
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              {isLogin 
-                ? "Don't have an account? Sign up" 
-                : "Already have an account? Sign in"
+              {isAdminLogin 
+                ? "Regular user login" 
+                : "Admin login"
               }
             </button>
           </div>

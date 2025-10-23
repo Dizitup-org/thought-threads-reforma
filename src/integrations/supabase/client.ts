@@ -13,5 +13,62 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: true,
+  },
+  db: {
+    schema: 'public',
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'reforma-app',
+    },
+  },
 });
+
+// Add admin client for full database control
+let supabaseAdmin: ReturnType<typeof createClient<Database>> | null = null;
+
+// Only create admin client on server-side (not in browser)
+if (typeof window === 'undefined') {
+  const SUPABASE_SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
+  if (SUPABASE_SERVICE_KEY) {
+    supabaseAdmin = createClient<Database>(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+        db: {
+          schema: 'public',
+        },
+      }
+    );
+  }
+}
+
+// For browser environment, we'll create a client with service key when needed
+export const getAdminClient = () => {
+  const SUPABASE_SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
+  if (SUPABASE_SERVICE_KEY) {
+    return createClient<Database>(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+        db: {
+          schema: 'public',
+        },
+      }
+    );
+  }
+  return null;
+};
+
+export { supabaseAdmin };

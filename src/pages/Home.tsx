@@ -40,11 +40,14 @@ const Home = () => {
         event: '*',
         schema: 'public',
         table: 'products'
-      }, () => {
+      }, (payload) => {
+        console.log('Home page: Real-time product change detected:', payload);
         fetchFeaturedProducts();
         fetchLatestProducts();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Home page: Products channel status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

@@ -1,34 +1,50 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { User, Package, MapPin, Settings, LogOut, Plus, Edit, Trash2 } from 'lucide-react';
+import { User, Package, MapPin, Settings, LogOut, Plus, Edit, Trash2, Upload, Eye, EyeOff } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface UserProfile {
   id: string;
+  auth_user_id: string;
   name: string;
   email: string;
   phone: string;
+  username: string;
+  avatar_url: string;
 }
 
 interface Address {
   id: string;
+  user_id: string;
+  label: string;
   address_line: string;
   city: string;
   state: string;
   pincode: string;
   country: string;
   is_default: boolean;
+  created_at: string;
 }
 
 interface Order {
   id: string;
-  products: any;
+  product_name: string;
+  size: string;
+  collection: string;
   total_amount: number;
   status: string;
   created_at: string;
@@ -41,15 +57,41 @@ export default function Profile() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
   const [newAddress, setNewAddress] = useState({
+    label: '',
     address_line: '',
     city: '',
     state: '',
     pincode: '',
     country: 'India'
   });
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    username: ''
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // Check URL params for active tab
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [location]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -71,14 +113,25 @@ export default function Profile() {
       if (!authUser) return;
 
       // Fetch user profile
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('users')
         .select('*')
         .eq('auth_user_id', authUser.id)
         .single();
 
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        return;
+      }
+
       if (profile) {
         setUser(profile);
+        setProfileForm({
+          name: profile.name || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          username: profile.username || ''
+        });
         
         // Fetch addresses
         const { data: addressesData } = await supabase
@@ -111,6 +164,11 @@ export default function Profile() {
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load user data",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -119,6 +177,55 @@ export default function Profile() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/');
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0] || !user) return;
+    
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+    
+    setIsUploading(true);
+    
+    try {
+      // Upload file
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+      
+      // Update user profile
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+      
+      if (updateError) throw updateError;
+      
+      // Update local state
+      setUser({ ...user, avatar_url: publicUrl });
+      
+      toast({
+        title: "Success",
+        description: "Profile picture updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload avatar",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const saveAddress = async () => {
@@ -142,8 +249,9 @@ export default function Profile() {
         toast({ title: "Address added successfully!" });
       }
       
-      setNewAddress({ address_line: '', city: '', state: '', pincode: '', country: 'India' });
+      setNewAddress({ label: '', address_line: '', city: '', state: '', pincode: '', country: 'India' });
       setEditingAddress(null);
+      setIsAddressDialogOpen(false);
       fetchUserData();
     } catch (error: any) {
       toast({
@@ -179,11 +287,92 @@ export default function Profile() {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ name: user.name, phone: user.phone })
+        .update({ 
+          name: profileForm.name, 
+          phone: profileForm.phone,
+          username: profileForm.username
+        })
         .eq('id', user.id);
       
       if (error) throw error;
+      
+      // Update local state
+      setUser({ 
+        ...user, 
+        name: profileForm.name, 
+        phone: profileForm.phone,
+        username: profileForm.username
+      });
+      
       toast({ title: "Profile updated successfully!" });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "New passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordForm.newPassword
+      });
+      
+      if (error) throw error;
+      
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user || !confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      // Delete user data from all tables
+      await supabase.from('addresses').delete().eq('user_id', user.id);
+      await supabase.from('wishlist').delete().eq('user_id', user.id);
+      await supabase.from('orders').delete().eq('user_id', user.id);
+      await supabase.from('users').delete().eq('id', user.id);
+      
+      // Delete auth user
+      const { error } = await supabase.auth.admin.deleteUser(user.auth_user_id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Account deleted",
+        description: "Your account has been permanently deleted",
+      });
+      
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Error",
@@ -212,25 +401,240 @@ export default function Profile() {
           </Button>
         </div>
 
-        <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              Orders
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Profile
             </TabsTrigger>
             <TabsTrigger value="addresses" className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
               Addresses
             </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Orders
+            </TabsTrigger>
+            <TabsTrigger value="wishlist" className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Wishlist
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
               Settings
             </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Profile
-            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="profile">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Profile Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex flex-col items-center">
+                    <div className="relative">
+                      {user?.avatar_url ? (
+                        <img 
+                          src={user.avatar_url} 
+                          alt="Profile" 
+                          className="w-24 h-24 rounded-full object-cover border-2 border-reforma-sage"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-full bg-reforma-sage flex items-center justify-center">
+                          <User className="w-12 h-12 text-reforma-brown" />
+                        </div>
+                      )}
+                      <label className="absolute bottom-0 right-0 bg-reforma-brown text-white rounded-full p-2 cursor-pointer">
+                        <Upload className="w-4 h-4" />
+                        <input 
+                          type="file" 
+                          className="hidden" 
+                          accept="image/*" 
+                          onChange={handleAvatarUpload}
+                          disabled={isUploading}
+                        />
+                      </label>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {isUploading ? "Uploading..." : "Upload profile picture"}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Name</Label>
+                      <Input
+                        value={profileForm.name}
+                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <Input value={profileForm.email} disabled />
+                    </div>
+                    <div>
+                      <Label>Username</Label>
+                      <Input
+                        value={profileForm.username}
+                        onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
+                        placeholder="Choose a username"
+                      />
+                    </div>
+                    <div>
+                      <Label>Phone</Label>
+                      <Input
+                        value={profileForm.phone || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <Button onClick={updateProfile}>
+                      Update Profile
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="addresses">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Saved Addresses</CardTitle>
+                  <CardDescription>Manage your delivery addresses</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="mb-4">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add New Address
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingAddress ? "Edit Address" : "Add New Address"}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Label</Label>
+                          <Input
+                            placeholder="Home, Office, etc."
+                            value={newAddress.label}
+                            onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Address Line</Label>
+                          <Input
+                            placeholder="Street address"
+                            value={newAddress.address_line}
+                            onChange={(e) => setNewAddress({ ...newAddress, address_line: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>City</Label>
+                            <Input
+                              placeholder="City"
+                              value={newAddress.city}
+                              onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label>State</Label>
+                            <Input
+                              placeholder="State"
+                              value={newAddress.state}
+                              onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Pincode</Label>
+                            <Input
+                              placeholder="Pincode"
+                              value={newAddress.pincode}
+                              onChange={(e) => setNewAddress({ ...newAddress, pincode: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label>Country</Label>
+                            <Input
+                              placeholder="Country"
+                              value={newAddress.country}
+                              onChange={(e) => setNewAddress({ ...newAddress, country: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <Button onClick={saveAddress}>
+                          {editingAddress ? "Update Address" : "Add Address"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  {addresses.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">No addresses saved</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {addresses.map((address) => (
+                        <div key={address.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-semibold">{address.label}</p>
+                                {address.is_default && (
+                                  <Badge variant="secondary">Default</Badge>
+                                )}
+                              </div>
+                              <p className="text-sm">{address.address_line}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {address.city}, {address.state} - {address.pincode}
+                              </p>
+                              <p className="text-sm text-muted-foreground">{address.country}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingAddress(address);
+                                  setNewAddress({
+                                    label: address.label,
+                                    address_line: address.address_line,
+                                    city: address.city,
+                                    state: address.state,
+                                    pincode: address.pincode,
+                                    country: address.country
+                                  });
+                                  setIsAddressDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => deleteAddress(address.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="orders">
             <Card>
@@ -257,12 +661,16 @@ export default function Profile() {
                           </Badge>
                         </div>
                         <div className="text-sm mb-2">
-                          <p><strong>Products:</strong> {order.products.length} items</p>
+                          <p><strong>Product:</strong> {order.product_name} (Size: {order.size})</p>
+                          <p><strong>Collection:</strong> {order.collection}</p>
                           <p><strong>Total:</strong> ₹{order.total_amount}</p>
                           {order.addresses && (
                             <p><strong>Address:</strong> {order.addresses.address_line}, {order.addresses.city}</p>
                           )}
                         </div>
+                        <Button variant="outline" size="sm">
+                          Track Order
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -271,164 +679,127 @@ export default function Profile() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="addresses">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Add New Address</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input
-                    placeholder="Address Line"
-                    value={newAddress.address_line}
-                    onChange={(e) => setNewAddress({ ...newAddress, address_line: e.target.value })}
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      placeholder="City"
-                      value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                    />
-                    <Input
-                      placeholder="State"
-                      value={newAddress.state}
-                      onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      placeholder="Pincode"
-                      value={newAddress.pincode}
-                      onChange={(e) => setNewAddress({ ...newAddress, pincode: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Country"
-                      value={newAddress.country}
-                      onChange={(e) => setNewAddress({ ...newAddress, country: e.target.value })}
-                    />
-                  </div>
-                  <Button onClick={saveAddress}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    {editingAddress ? 'Update Address' : 'Add Address'}
+          <TabsContent value="wishlist">
+            <Card>
+              <CardHeader>
+                <CardTitle>Wishlist</CardTitle>
+                <CardDescription>Your favorite items</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Your wishlist is empty</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Save items that you like to your wishlist
+                  </p>
+                  <Button asChild>
+                    <a href="/shop">Browse Products</a>
                   </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Saved Addresses</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {addresses.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">No addresses saved</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {addresses.map((address) => (
-                        <div key={address.id} className="border rounded-lg p-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-semibold">{address.address_line}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {address.city}, {address.state} - {address.pincode}
-                              </p>
-                              <p className="text-sm text-muted-foreground">{address.country}</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingAddress(address);
-                                  setNewAddress({
-                                    address_line: address.address_line,
-                                    city: address.city,
-                                    state: address.state,
-                                    pincode: address.pincode,
-                                    country: address.country
-                                  });
-                                }}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => deleteAddress(address.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Settings</CardTitle>
-                <CardDescription>Update your personal information</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {user && (
-                  <>
-                    <div>
-                      <label className="text-sm font-medium">Name</label>
-                      <Input
-                        value={user.name}
-                        onChange={(e) => setUser({ ...user, name: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Email</label>
-                      <Input value={user.email} disabled />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Phone</label>
-                      <Input
-                        value={user.phone || ''}
-                        onChange={(e) => setUser({ ...user, phone: e.target.value })}
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                    <Button onClick={updateProfile}>
-                      Update Profile
-                    </Button>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {user && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Name</label>
-                      <p className="text-lg">{user.name}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Email</label>
-                      <p className="text-lg">{user.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                      <p className="text-lg">{user.phone || 'Not provided'}</p>
-                    </div>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Profile Settings</CardTitle>
+                  <CardDescription>Update your personal information</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Name</Label>
+                    <Input
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                    />
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <div>
+                    <Label>Email</Label>
+                    <Input value={profileForm.email} disabled />
+                  </div>
+                  <div>
+                    <Label>Phone</Label>
+                    <Input
+                      value={profileForm.phone || ''}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <Button onClick={updateProfile}>
+                    Update Profile
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Change Password</CardTitle>
+                  <CardDescription>Update your account password</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="relative">
+                    <Label>Current Password</Label>
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-6 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                  <div>
+                    <Label>New Password</Label>
+                    <Input
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Confirm New Password</Label>
+                    <Input
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    />
+                  </div>
+                  <Button onClick={handleChangePassword}>
+                    Change Password
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Danger Zone</CardTitle>
+                  <CardDescription>Permanently delete your account</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="border border-destructive rounded-lg p-4">
+                    <h3 className="font-medium text-destructive mb-2">Delete Account</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Once you delete your account, there is no going back. Please be certain.
+                    </p>
+                    <Button variant="destructive" onClick={handleDeleteAccount}>
+                      Delete My Account
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

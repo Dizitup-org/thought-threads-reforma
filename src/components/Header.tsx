@@ -1,22 +1,72 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Menu, X, ShoppingBag, Settings, User, Shield } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Menu, X, ShoppingBag, Settings, User, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(true);
-  const [showAdminButton, setShowAdminButton] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { totalItems } = useCart();
+  const navigate = useNavigate();
 
-  // Temporarily bypass auth check
   useEffect(() => {
-    // Set mock user for testing
-    setUser({ id: "test-user" });
+    // Check active session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        // Check if user is admin
+        const { data: admin } = await supabase
+          .from('admin_users')
+          .select('*')
+          .eq('email', session.user.email)
+          .single();
+        setIsAdmin(!!admin);
+      }
+    };
+
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        // Check if user is admin
+        const checkAdmin = async () => {
+          const { data: admin } = await supabase
+            .from('admin_users')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+          setIsAdmin(!!admin);
+        };
+        checkAdmin();
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
+    navigate('/');
+  };
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -62,20 +112,48 @@ const Header = () => {
                 </Link>
               </Button>
               
-              <Button asChild variant="ghost" size="icon" className="hover:bg-accent/10">
-                <Link to="/settings">
-                  <Settings className="h-5 w-5" />
-                </Link>
-              </Button>
-              
               {/* Show profile/login based on user state */}
               {user ? (
-                <Button asChild variant="outline" size="sm" className="border-reforma-sage text-reforma-brown hover:bg-reforma-sage/10">
-                  <Link to="/profile">
-                    <User className="h-4 w-4 mr-2" />
-                    Profile
-                  </Link>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="border-reforma-sage text-reforma-brown hover:bg-reforma-sage/10">
+                      <User className="h-4 w-4 mr-2" />
+                      {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Profile'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile">
+                        <User className="h-4 w-4 mr-2" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile?tab=orders">
+                        <ShoppingBag className="h-4 w-4 mr-2" />
+                        Orders
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile?tab=settings">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin">
+                          <Shield className="h-4 w-4 mr-2" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Log Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <Button asChild size="sm" className="btn-reforma">
                   <Link to="/auth">
@@ -83,14 +161,6 @@ const Header = () => {
                   </Link>
                 </Button>
               )}
-              
-              {/* Always show Admin Button for testing */}
-              <Button asChild size="sm" className="btn-reforma">
-                <Link to="/admin">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Admin
-                </Link>
-              </Button>
             </div>
 
             {/* Mobile menu button */}
@@ -132,14 +202,45 @@ const Header = () => {
                   >
                     Cart ({totalItems})
                   </Link>
-                  <Link
-                    to="/admin"
-                    className="block px-3 py-2 text-muted-foreground hover:text-reforma-brown transition-colors duration-300 font-semibold"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Shield className="h-4 w-4 mr-2 inline" />
-                    Admin Panel
-                  </Link>
+                  {user ? (
+                    <>
+                      <Link
+                        to="/profile"
+                        className="block px-3 py-2 text-muted-foreground hover:text-reforma-brown transition-colors duration-300"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Dashboard
+                      </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          className="block px-3 py-2 text-muted-foreground hover:text-reforma-brown transition-colors duration-300 font-semibold"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <Shield className="h-4 w-4 mr-2 inline" />
+                          Admin Panel
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => {
+                          handleSignOut();
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-red-600 hover:text-red-700 transition-colors duration-300"
+                      >
+                        <LogOut className="h-4 w-4 mr-2 inline" />
+                        Log Out
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      to="/auth"
+                      className="block px-3 py-2 text-muted-foreground hover:text-reforma-brown transition-colors duration-300"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Login
+                    </Link>
+                  )}
                   <Link
                     to="/settings"
                     className="block px-3 py-2 text-muted-foreground hover:text-reforma-brown transition-colors duration-300"
@@ -154,19 +255,21 @@ const Header = () => {
         </div>
       </header>
 
-      {/* Floating Admin Access Button - Always show for testing */}
-      <div className="fixed bottom-6 right-6 z-40 animate-fade-in-up">
-        <Button 
-          asChild 
-          className="btn-reforma shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-          size="lg"
-        >
-          <Link to="/admin">
-            <Shield className="h-5 w-5 mr-2" />
-            Admin Dashboard
-          </Link>
-        </Button>
-      </div>
+      {/* Floating Admin Access Button - Show only for admins after welcome animation */}
+      {localStorage.getItem('reforma_welcome_completed') && isAdmin && (
+        <div className="fixed bottom-6 right-6 z-40 animate-fade-in-up">
+          <Button 
+            asChild 
+            className="btn-reforma shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+            size="lg"
+          >
+            <Link to="/admin">
+              <Shield className="h-5 w-5 mr-2" />
+              Admin Dashboard
+            </Link>
+          </Button>
+        </div>
+      )}
     </>
   );
 };

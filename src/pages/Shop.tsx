@@ -61,10 +61,13 @@ const Shop = () => {
         event: '*',
         schema: 'public',
         table: 'products'
-      }, () => {
+      }, (payload) => {
+        console.log('Shop page: Real-time product change detected:', payload);
         fetchProducts();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Shop page: Products channel status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
