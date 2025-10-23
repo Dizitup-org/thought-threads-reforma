@@ -3,7 +3,9 @@ import { useCart } from "@/hooks/useCart";
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Minus, Plus, Trash2, ArrowLeft, QrCode, Timer } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Minus, Plus, Trash2, ArrowLeft, QrCode, Timer, User, Mail, Phone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from '@/hooks/use-toast';
 import AddressSelector from '@/components/AddressSelector';
@@ -14,11 +16,17 @@ const Cart = () => {
   const [showAddressSelector, setShowAddressSelector] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [showPaymentQR, setShowPaymentQR] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [adminPhoneNumber, setAdminPhoneNumber] = useState("919831681756"); // Default admin number
+  const [adminPhoneNumber, setAdminPhoneNumber] = useState("919831681756");
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  
+  // Customer details form
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
 
   // Temporarily bypass auth check
   useEffect(() => {
@@ -60,18 +68,46 @@ const Cart = () => {
   };
 
   const handlePlaceOrder = () => {
-    // Temporarily bypass login requirement
-    // if (!user) {
-    //   toast({
-    //     title: "Please login first",
-    //     description: "You need to be logged in to place an order.",
-    //     variant: "destructive",
-    //   });
-    //   navigate('/auth');
-    //   return;
-    // }
+    // Show customer details form first
+    setShowCustomerForm(true);
+  };
+
+  const handleCustomerFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Show payment QR directly instead of address selector first
+    // Validate form
+    if (!customerName.trim() || !customerEmail.trim() || !customerPhone.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all customer details.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customerEmail)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate phone number (basic validation)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(customerPhone.replace(/[^0-9]/g, ''))) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid 10-digit phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowCustomerForm(false);
     setShowPaymentQR(true);
   };
 
@@ -89,12 +125,15 @@ const Cart = () => {
       // Save orders to Supabase (one row per item due to current schema)
       const orderPromises = items.map(async (item) => {
         const orderData = {
-          user_id: user.id,
+          user_id: user?.id || null,
           address_id: selectedAddress?.id || null,
           product_name: item.name,
           collection: item.collection,
           size: item.size,
           gsm: item.gsm,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
           products: {
             id: item.id,
             name: item.name,
@@ -118,11 +157,24 @@ const Cart = () => {
         throw new Error('Failed to save some orders');
       }
 
-      // Generate WhatsApp message
+      // Generate comprehensive WhatsApp message with customer details
       const message = `Hey Reforma Team 👋,
-I've just paid ₹${totalPrice.toFixed(2)} for:
-${items.map(item => `${item.name} (${item.size}${item.gsm ? `, ${item.gsm}gsm` : ''}) x ${item.quantity}`).join(', ')}.
-Please confirm my order and share expected delivery details.`;
+
+I've just completed payment for my order!
+
+*Customer Details:*
+Name: ${customerName}
+Email: ${customerEmail}
+Phone: ${customerPhone}
+
+*Order Summary:*
+${items.map(item => `• ${item.name} (${item.size}${item.gsm ? `, ${item.gsm}gsm` : ''}) x ${item.quantity} = ₹${(item.price * item.quantity).toFixed(2)}`).join('\n')}
+
+*Total Amount Paid: ₹${totalPrice.toFixed(2)}*
+
+Please confirm my order and share the expected delivery details. When can I expect my order to arrive?
+
+Thank you!`;
 
       const whatsappUrl = `https://wa.me/${adminPhoneNumber}?text=${encodeURIComponent(message)}`;
       
@@ -262,12 +314,90 @@ Please confirm my order and share expected delivery details.`;
         </div>
       </div>
 
+      {/* Customer Details Form Modal */}
+      {showCustomerForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <CardTitle className="serif-heading text-xl text-reforma-brown">Customer Details</CardTitle>
+              <p className="text-sm text-muted-foreground">Please provide your contact information to proceed</p>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCustomerFormSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Full Name
+                  </Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="input-reforma"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email Address
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="input-reforma"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Phone Number
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="10-digit mobile number"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="input-reforma"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-3 pt-4">
+                  <Button 
+                    type="submit"
+                    className="btn-reforma w-full"
+                  >
+                    Continue to Payment
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    className="w-full border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
+                    onClick={() => setShowCustomerForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Payment QR Modal */}
       {showPaymentQR && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-md w-full">
             <CardHeader>
               <CardTitle className="serif-heading text-xl text-reforma-brown">Complete Payment</CardTitle>
+              <p className="text-sm text-muted-foreground">Customer: {customerName} | {customerEmail}</p>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">

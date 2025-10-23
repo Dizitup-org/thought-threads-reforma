@@ -66,6 +66,8 @@ const Admin = () => {
   const [showSetupForm, setShowSetupForm] = useState(false);
   const [setupForm, setSetupForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [emailSignups, setEmailSignups] = useState<any[]>([]);
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
   const gsmOptions = [180, 210, 220, 240];
@@ -217,6 +219,85 @@ const Admin = () => {
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
+  const fetchEmailSignups = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_signups')
+        .select('*')
+        .order('subscribed_at', { ascending: false });
+      
+      if (error) throw error;
+      setEmailSignups(data || []);
+    } catch (error) {
+      console.error('Error fetching email signups:', error);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Order updated",
+        description: `Order status changed to ${newStatus}`,
+      });
+      
+      fetchOrders();
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm('Are you sure you want to delete this order?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Order deleted",
+        description: "Order has been removed successfully",
+      });
+      
+      fetchOrders();
+      fetchStats();
+    } catch (error: any) {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -861,10 +942,87 @@ const Admin = () => {
           <TabsContent value="orders">
             <Card>
               <CardHeader>
-                <CardTitle className="serif-heading text-xl text-reforma-brown">Recent Orders</CardTitle>
+                <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center justify-between">
+                  <span>Recent Orders</span>
+                  <Badge variant="secondary" className="badge-reforma">
+                    {orders.length} Total
+                  </Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Orders will appear here as customers place them via WhatsApp.</p>
+                {orders.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No orders yet. Orders will appear here as customers complete purchases.</p>
+                ) : (
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                    {orders.map(order => (
+                      <div key={order.id} className="border border-border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <h4 className="font-semibold text-reforma-brown">{order.product_name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Collection: {order.collection} | Size: {order.size}
+                              {order.gsm && ` | GSM: ${order.gsm}`}
+                            </p>
+                          </div>
+                          <Badge 
+                            className={`
+                              ${order.status === 'Pending' ? 'bg-yellow-500' : 
+                                order.status === 'Processing' ? 'bg-blue-500' :
+                                order.status === 'Shipped' ? 'bg-purple-500' :
+                                order.status === 'Delivered' ? 'bg-green-500' :
+                                'bg-gray-500'} text-white
+                            `}
+                          >
+                            {order.status}
+                          </Badge>
+                        </div>
+                        
+                        {(order.customer_name || order.customer_email || order.customer_phone) && (
+                          <div className="bg-muted/50 p-3 rounded space-y-1">
+                            <p className="text-sm font-medium text-reforma-brown">Customer Details:</p>
+                            {order.customer_name && <p className="text-sm">Name: {order.customer_name}</p>}
+                            {order.customer_email && <p className="text-sm">Email: {order.customer_email}</p>}
+                            {order.customer_phone && <p className="text-sm">Phone: {order.customer_phone}</p>}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <div>
+                            <p className="text-lg font-bold text-reforma-brown">₹{Number(order.total_amount).toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString()}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Select
+                              value={order.status}
+                              onValueChange={(value) => handleUpdateOrderStatus(order.id, value)}
+                            >
+                              <SelectTrigger className="w-32 h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Pending">Pending</SelectItem>
+                                <SelectItem value="Processing">Processing</SelectItem>
+                                <SelectItem value="Shipped">Shipped</SelectItem>
+                                <SelectItem value="Delivered">Delivered</SelectItem>
+                                <SelectItem value="Cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteOrder(order.id)}
+                              className="text-destructive border-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -872,10 +1030,33 @@ const Admin = () => {
           <TabsContent value="emails">
             <Card>
               <CardHeader>
-                <CardTitle className="serif-heading text-xl text-reforma-brown">Email Subscribers</CardTitle>
+                <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center justify-between">
+                  <span>Email Subscribers</span>
+                  <Badge variant="secondary" className="badge-reforma">
+                    {emailSignups.length} Subscribers
+                  </Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Newsletter subscribers will appear here.</p>
+                {emailSignups.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No email subscribers yet.</p>
+                ) : (
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                    {emailSignups.map(signup => (
+                      <div key={signup.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{signup.email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Subscribed: {new Date(signup.subscribed_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

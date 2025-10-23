@@ -85,6 +85,54 @@ export type Database = {
         }
         Relationships: []
       }
+      cart: {
+        Row: {
+          created_at: string
+          gsm: number | null
+          id: string
+          product_id: string | null
+          quantity: number
+          size: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          gsm?: number | null
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          size: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          gsm?: number | null
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          size?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collections: {
         Row: {
           created_at: string
@@ -133,7 +181,9 @@ export type Database = {
           collection: string
           created_at: string
           customer_email: string | null
+          customer_name: string | null
           customer_phone: string | null
+          gsm: number | null
           id: string
           product_id: string | null
           product_name: string
@@ -148,7 +198,9 @@ export type Database = {
           collection: string
           created_at?: string
           customer_email?: string | null
+          customer_name?: string | null
           customer_phone?: string | null
+          gsm?: number | null
           id?: string
           product_id?: string | null
           product_name: string
@@ -163,7 +215,9 @@ export type Database = {
           collection?: string
           created_at?: string
           customer_email?: string | null
+          customer_name?: string | null
           customer_phone?: string | null
+          gsm?: number | null
           id?: string
           product_id?: string | null
           product_name?: string
