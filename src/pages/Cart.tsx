@@ -166,7 +166,7 @@ const Cart = () => {
         });
 
       // Generate comprehensive WhatsApp message with customer details
-      const message = `Hey Reforma Team 👋,
+      const message = `Hey RēForma Team 👋,
 
 I've just completed payment for my order!
 

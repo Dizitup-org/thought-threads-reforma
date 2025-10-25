@@ -88,8 +88,8 @@ const Contact = () => {
     {
       icon: Twitter,
       title: "Twitter",
-      description: "@ReformaThreads",
-      action: "https://twitter.com/ReformaThreads"
+      description: "@RēFormaThreads",
+      action: "https://twitter.com/RēFormaThreads"
     }
   ];
 

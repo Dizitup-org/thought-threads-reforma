@@ -94,7 +94,7 @@ const Header = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <Link to="/" className="serif-heading text-2xl font-bold text-reforma-brown flex items-center">
-                <span className="mr-2">RĒFORMA</span>
+                <span className="mr-2">R<span className="relative">ē</span>Forma</span>
               </Link>
             </motion.div>
 

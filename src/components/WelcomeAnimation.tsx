@@ -146,7 +146,7 @@ const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
                 variants={itemVariants}
                 className="serif-heading text-3xl font-bold text-reforma-brown mb-2"
               >
-                Welcome to RĒFORMA
+                Welcome to R<span className="relative">ē</span>Forma
               </motion.h1>
 
               <motion.p

@@ -64,6 +64,11 @@ const ProductDetail = () => {
       if (data.gsm && data.gsm.length > 0) {
         setSelectedGsm(data.gsm[0]);
       }
+      
+      // Set default size if available
+      if (data.sizes && data.sizes.length > 0) {
+        setSelectedSize(data.sizes[0]);
+      }
     } catch (error) {
       console.error('Error fetching product:', error);
     } finally {
@@ -141,7 +146,7 @@ const ProductDetail = () => {
   };
 
   const generateWhatsAppMessage = () => {
-    const message = `Hi REFORMA, I'd like to order ${product!.name} (${selectedSize || 'Size TBD'}${selectedGsm ? `, ${selectedGsm}gsm` : ''}) from ${product!.collection}. Price: ₹${product!.is_on_sale && product!.discounted_price ? product!.discounted_price : product!.price}`;
+    const message = `Hi RēForma, I'd like to order ${product!.name} (${selectedSize || 'Size TBD'}${selectedGsm ? `, ${selectedGsm}gsm` : ''}) from ${product!.collection}. Price: ₹${product!.is_on_sale && product!.discounted_price ? product!.discounted_price : product!.price}`;
     return `https://wa.me/919831681756?text=${encodeURIComponent(message)}`;
   };
 

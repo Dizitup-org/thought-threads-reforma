@@ -33,12 +33,22 @@ CREATE TRIGGER update_site_settings_updated_at
   EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Insert default site settings
-INSERT INTO public.site_settings (setting_key, setting_value) VALUES
-('site_title', 'REFORMA'),
-('tagline', 'Fashion. Reimagined.'),
-('about_text', 'Minimalist elegance for deep thinkers. Where sophisticated design meets conscious choices.'),
-('contact_email', 'hello@reforma.com'),
-('contact_phone', '+1 (555) 123-4567'),
-('whatsapp_number', '1234567890'),
-('instagram_url', 'https://instagram.com/reforma'),
-('facebook_url', 'https://facebook.com/reforma');
+INSERT INTO site_settings (setting_key, setting_value) VALUES
+  ('admin_phone', '919831681756'),
+  ('site_title', 'RēForma'),
+  ('site_description', 'Minimalist elegance meets conscious design'),
+  ('contact_email', 'contact@reforma.com'),
+  ('social_instagram', 'https://instagram.com/reformathreads'),
+  ('social_twitter', 'https://twitter.com/reformathreads');
+
+-- Create function to get site settings
+CREATE OR REPLACE FUNCTION get_site_setting(setting_key TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  RETURN (
+    SELECT setting_value 
+    FROM site_settings 
+    WHERE site_settings.setting_key = $1
+  );
+END;
+$$ LANGUAGE plpgsql;

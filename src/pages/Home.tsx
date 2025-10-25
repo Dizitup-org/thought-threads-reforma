@@ -7,7 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import NewsletterForm from "@/components/NewsletterForm";
 import { supabase } from "@/integrations/supabase/client";
-import heroImage from "@/assets/hero-image.jpg";
+import heroImage from "@/assets/hero elegant.jpg";
 
 interface Product {
   id: string;
@@ -129,18 +129,23 @@ const Home = () => {
       <SaleBanner />
       
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden luxury-section">
+      <section className="relative h-screen flex items-center justify-center overflow-hidden luxury-section hero-section">
         <motion.div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 bg-cover bg-no-repeat"
           style={{
-            backgroundImage: `url(${heroImage})`
+            backgroundImage: `url(${heroImage})`,
+            backgroundPosition: 'center top',
+            backgroundSize: 'cover',
+            objectFit: 'cover',
+            transform: 'scale(1.1)',
+            transformOrigin: 'center center'
           }}
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1.1 }}
           transition={{ duration: 1.5, ease: "easeOut" }}
         >
-          {/* Semi-transparent overlay for better text visibility */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/20 to-background/40" />
+          {/* Enhanced semi-transparent overlay for better text visibility */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/40 to-background/60 hero-overlay" />
         </motion.div>
         
         {/* Luxury Brand Animation */}
@@ -163,77 +168,42 @@ const Home = () => {
             ></motion.div>
           </div>
         </div>
-        
-        <motion.div 
-          className="relative z-10 text-center max-w-4xl mx-auto px-4 mobile-padding"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-        >
+
+        <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
           <motion.h1 
-            className="serif-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-6 sm:mb-8 text-reforma-brown font-extrabold luxury-heading"
-            initial={{ opacity: 0, y: 20 }}
+            className="serif-heading text-5xl md:text-7xl lg:text-8xl font-bold mb-6 luxury-heading hero-text"
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           >
-            RĒFORMA
+            R<span className="relative">ē</span>Forma
           </motion.h1>
           
           <motion.p 
-            className="text-xl sm:text-2xl md:text-3xl text-reforma-brown mb-6 animate-luxury-fade-in animate-stagger-1 font-light"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-          >
-            Fashion. Reimagined.
-          </motion.p>
-          
-          <motion.p 
-            className="text-base sm:text-lg md:text-xl text-reforma-brown/80 mb-8 sm:mb-12 max-w-2xl mx-auto animate-luxury-fade-in animate-stagger-2 leading-relaxed"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-          >
-            Minimalist elegance for deep thinkers. Where sophisticated design meets conscious choices.
-          </motion.p>
-          
-          <motion.div 
-            className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center animate-luxury-fade-in animate-stagger-3"
+            className="text-lg md:text-xl mb-10 max-w-2xl mx-auto luxury-subheading hero-text"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.9 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <Button asChild size="lg" className="luxury-btn-primary px-6 py-3 sm:px-8 sm:py-4 text-base touch-friendly">
+            Elevate your thoughts, embrace luxury stationery
+          </motion.p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+          >
+            <Button 
+              asChild 
+              size="lg" 
+              className="bg-white text-reforma-brown hover:bg-white/90 px-8 py-6 text-lg font-medium luxury-button hero-button"
+            >
               <Link to="/shop">
-                Explore Collection
-                <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-              </Link>
-            </Button>
-            
-            <Button asChild variant="outline" size="lg" className="luxury-btn-outline px-6 py-3 sm:px-8 sm:py-4 text-base touch-friendly">
-              <Link to="/about">
-                Our Philosophy
-                <Sparkles className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                Explore Collection <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </motion.div>
-        </motion.div>
-
-        {/* Scroll indicator */}
-        <motion.div 
-          className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.2 }}
-        >
-          <motion.div 
-            className="w-5 h-8 sm:w-6 sm:h-10 border-2 border-reforma-brown rounded-full flex justify-center"
-            animate={{ y: [0, 5, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="w-1 h-2 sm:w-1 sm:h-3 bg-reforma-brown rounded-full mt-1 sm:mt-2"></div>
-          </motion.div>
-        </motion.div>
+        </div>
       </section>
 
       {/* Featured Collections */}

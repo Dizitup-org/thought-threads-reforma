@@ -160,7 +160,7 @@ Contrast: White #FFFFFF for clarity.
   
   .product-card:hover {
     border-color: hsl(var(--accent));
-    box-shadow: var(--shadow-elegant);
+    box-shadow: 0 12px 30px hsl(var(--primary) / 0.15);
     transform: translateY(-2px);
   }
   
@@ -206,7 +206,7 @@ Contrast: White #FFFFFF for clarity.
   .luxury-card {
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
-    box-shadow: 0 4px 20px rgba(92, 78, 67, 0.08);
+    box-shadow: 0 4px 20px hsl(var(--primary) / 0.08);
     transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
     border-radius: 0.75rem;
     overflow: hidden;
@@ -229,7 +229,7 @@ Contrast: White #FFFFFF for clarity.
   
   .luxury-card:hover {
     transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 15px 40px rgba(92, 78, 67, 0.15);
+    box-shadow: 0 15px 40px hsl(var(--primary) / 0.15);
     border-color: hsl(var(--accent));
   }
   
@@ -376,12 +376,12 @@ Contrast: White #FFFFFF for clarity.
   }
   
   .luxury-low-stock {
-    color: #e53e3e;
+    color: hsl(var(--destructive));
     font-weight: 500;
   }
   
   .luxury-out-of-stock {
-    color: #e53e3e;
+    color: hsl(var(--destructive));
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -887,7 +887,7 @@ Contrast: White #FFFFFF for clarity.
 
   .product-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(92, 78, 67, 0.15);
+    box-shadow: 0 15px 30px hsl(var(--primary) / 0.15);
   }
 
   /* Smooth fade-in animations */
@@ -1084,4 +1084,26 @@ Contrast: White #FFFFFF for clarity.
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Custom styles for hero section */
+.hero-section {
+  background-position: center top !important;
+  background-size: cover !important;
+}
+
+.hero-overlay {
+  background: linear-gradient(to bottom, 
+    hsl(var(--background) / 0.5) 0%, 
+    hsl(var(--background) / 0.4) 50%, 
+    hsl(var(--background) / 0.6) 100%) !important;
+}
+
+.hero-text {
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+  color: hsl(var(--white)) !important;
+}
+
+.hero-button {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
 }

@@ -53,7 +53,7 @@ const About = () => {
                 </p>
                 
                 <p className="text-lg leading-relaxed">
-                  REFORMA isn't just about what you wear—it's about who you are. 
+                  RēForma isn't just about what you wear—it's about who you are. 
                   We design for the introverts who speak volumes through their choices, 
                   the deep thinkers who see art in algorithms, poetry in code, 
                   and philosophy in everyday moments.
@@ -108,7 +108,7 @@ const About = () => {
               <div className="space-y-4 text-muted-foreground">
                 <p>
                   Born from late-night contemplations and endless cups of coffee, 
-                  REFORMA emerged from a simple observation: the fashion world rarely 
+                  RēForma emerged from a simple observation: the fashion world rarely 
                   speaks to the depth of the thinking mind.
                 </p>
                 
@@ -135,7 +135,7 @@ const About = () => {
                     We don't just make clothes—we craft conversations for the curious mind."
                   </blockquote>
                   <footer className="text-center mt-4 text-muted-foreground">
-                    — REFORMA Collective
+                    — RēForma Collective
                   </footer>
                 </div>
               </div>

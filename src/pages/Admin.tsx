@@ -58,6 +58,7 @@ const Admin = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [emailSignups, setEmailSignups] = useState<any[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [usePremiumAnimation, setUsePremiumAnimation] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -145,6 +146,12 @@ const Admin = () => {
     // For development, auto-login with demo credentials
     // In production, remove this and use proper authentication
     setIsAuthenticated(true);
+    
+    // Check if premium animation is enabled
+    const premiumSetting = localStorage.getItem('reforma_premium_welcome');
+    if (premiumSetting !== null) {
+      setUsePremiumAnimation(premiumSetting === 'true');
+    }
     
     checkDatabaseHealth();
     fetchProducts();
@@ -744,6 +751,32 @@ const Admin = () => {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Welcome Animation Toggle */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Welcome Animation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Premium Animation</p>
+                      <p className="text-xs text-muted-foreground">Enable luxury intro animation</p>
+                    </div>
+                    <Switch
+                      checked={usePremiumAnimation}
+                      onCheckedChange={(checked) => {
+                        setUsePremiumAnimation(checked);
+                        localStorage.setItem('reforma_premium_welcome', checked.toString());
+                        toast({
+                          title: "Settings updated",
+                          description: `Premium animation ${checked ? 'enabled' : 'disabled'}`,
+                        });
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+              
               {/* Database Health Card */}
               <Card className={dbHealth.status === 'healthy' ? 'border-green-500' : dbHealth.status === 'error' ? 'border-red-500' : 'border-yellow-500'}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

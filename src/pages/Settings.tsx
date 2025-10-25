@@ -22,7 +22,7 @@ const Settings = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [settings, setSettings] = useState<SiteSettings>({
-    site_title: "REFORMA",
+    site_title: "RēForma",
     tagline: "Fashion. Reimagined.",
     about_text: "Minimalist elegance for deep thinkers. Where sophisticated design meets conscious choices.",
     contact_email: "hello@reforma.com",

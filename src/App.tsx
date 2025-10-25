@@ -20,6 +20,7 @@ import Profile from "./pages/Profile";
 import ProductDetail from "./pages/ProductDetail";
 import NotFound from "./pages/NotFound";
 import WelcomeAnimation from "./components/WelcomeAnimation";
+import PremiumWelcomeAnimation from "./components/PremiumWelcomeAnimation";
 import AdminTest from "./pages/AdminTest";
 import ConnectionTest from "./pages/ConnectionTest";
 import RLSFix from "./pages/RLSFix";
@@ -60,21 +61,32 @@ const AnimatedRoutes = () => {
 
 const App = () => {
   const [showWelcome, setShowWelcome] = useState(true);
+  const [usePremiumAnimation, setUsePremiumAnimation] = useState(true);
   const [userData, setUserData] = useState<{ name: string; email: string; phone: string } | null>(null);
 
-  // Check if user has already completed welcome flow
+  // Always show welcome animation on reload
   useEffect(() => {
-    const welcomeCompleted = localStorage.getItem('reforma_welcome_completed');
-    if (welcomeCompleted) {
-      setShowWelcome(false);
+    const premiumSetting = localStorage.getItem('reforma_premium_welcome');
+    
+    // Always show welcome animation
+    setShowWelcome(true);
+    
+    if (premiumSetting !== null) {
+      setUsePremiumAnimation(premiumSetting === 'true');
     }
   }, []);
 
-  const handleWelcomeComplete = (data: { name: string; email: string; phone: string }) => {
-    setUserData(data);
+  const handleWelcomeComplete = (data?: { name: string; email: string; phone: string }) => {
+    if (data) {
+      setUserData(data);
+      localStorage.setItem('reforma_user_data', JSON.stringify(data));
+    }
     setShowWelcome(false);
-    localStorage.setItem('reforma_welcome_completed', 'true');
-    localStorage.setItem('reforma_user_data', JSON.stringify(data));
+    // Don't set the completion flag to ensure animation shows on every reload
+  };
+
+  const handlePremiumAnimationComplete = () => {
+    handleWelcomeComplete();
   };
 
   return (
@@ -86,7 +98,11 @@ const App = () => {
           <BrowserRouter>
             <div className="min-h-screen bg-background">
               {showWelcome && (
-                <WelcomeAnimation onComplete={handleWelcomeComplete} />
+                usePremiumAnimation ? (
+                  <PremiumWelcomeAnimation onComplete={handlePremiumAnimationComplete} />
+                ) : (
+                  <WelcomeAnimation onComplete={handleWelcomeComplete} />
+                )
               )}
               <Header />
               <AnimatedRoutes />

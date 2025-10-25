@@ -153,8 +153,8 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            {isAdminLogin ? 'Admin Login' : (isLogin ? 'Welcome Back' : 'Join Reforma')}
+          <CardTitle className="serif-heading text-2xl text-reforma-brown">
+            {isAdminLogin ? 'Admin Login' : (isLogin ? 'Welcome Back' : 'Join RēForma')}
           </CardTitle>
           <CardDescription>
             {isAdminLogin 
