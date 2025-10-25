@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -187,172 +188,205 @@ const Shop = () => {
     tags: product.tags,
     discount_percentage: product.discount_percentage,
     discounted_price: product.discounted_price,
-    is_on_sale: product.is_on_sale
+    is_on_sale: product.is_on_sale,
+    featured: product.featured
   });
 
   return (
     <div className="min-h-screen pt-24 pb-12">
       <SaleBanner />
       
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <motion.div 
+        className="container mx-auto px-4 sm:px-6 lg:px-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         {/* Header */}
-        <div className="mb-12 text-center">
+        <motion.div 
+          className="mb-12 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           <h1 className="serif-heading text-4xl md:text-5xl font-bold mb-4 text-reforma-brown">
             Our Collection
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Discover thoughtfully crafted pieces that embody sophistication and conscious design.
           </p>
-        </div>
+        </motion.div>
 
         {/* Filters and Search */}
-        <Card className="mb-8 shadow-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filter & Search
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-4">
-              {/* Search */}
-              <div className="relative lg:col-span-2">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 input-reforma"
-                />
-              </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <Card className="mb-8 shadow-elegant">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filter & Search
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-4">
+                {/* Search */}
+                <div className="relative lg:col-span-2">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search products..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 input-reforma"
+                  />
+                </div>
 
-              {/* Collection Filter */}
-              <Select value={selectedCollection} onValueChange={setSelectedCollection}>
-                <SelectTrigger className="input-reforma">
-                  <SelectValue placeholder="All Collections" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Collections</SelectItem>
-                  {collections.map(collection => (
-                    <SelectItem key={collection} value={collection}>
-                      {collection}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Tag Filter */}
-              <Select value={selectedTag} onValueChange={setSelectedTag}>
-                <SelectTrigger className="input-reforma">
-                  <SelectValue placeholder="All Tags" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Tags</SelectItem>
-                  {tags.map(tag => (
-                    <SelectItem key={tag} value={tag}>
-                      {tag}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Size Filter */}
-              <Select value={selectedSize} onValueChange={setSelectedSize}>
-                <SelectTrigger className="input-reforma">
-                  <SelectValue placeholder="All Sizes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sizes</SelectItem>
-                  <SelectItem value="XS">XS</SelectItem>
-                  <SelectItem value="S">S</SelectItem>
-                  <SelectItem value="M">M</SelectItem>
-                  <SelectItem value="L">L</SelectItem>
-                  <SelectItem value="XL">XL</SelectItem>
-                  <SelectItem value="XXL">XXL</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* GSM Filter */}
-              <Select value={selectedGsm} onValueChange={setSelectedGsm}>
-                <SelectTrigger className="input-reforma">
-                  <SelectValue placeholder="All GSM" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All GSM</SelectItem>
-                  {gsmOptions.map(gsm => (
-                    <SelectItem key={gsm} value={gsm.toString()}>
-                      {gsm} GSM
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Sort and View Mode */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex gap-2">
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-48 input-reforma">
-                    <SelectValue placeholder="Sort by" />
+                {/* Collection Filter */}
+                <Select value={selectedCollection} onValueChange={setSelectedCollection}>
+                  <SelectTrigger className="input-reforma">
+                    <SelectValue placeholder="All Collections" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="name">Name A-Z</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                    <SelectItem value="newest">Newest First</SelectItem>
+                    <SelectItem value="all">All Collections</SelectItem>
+                    {collections.map(collection => (
+                      <SelectItem key={collection} value={collection}>
+                        {collection}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Tag Filter */}
+                <Select value={selectedTag} onValueChange={setSelectedTag}>
+                  <SelectTrigger className="input-reforma">
+                    <SelectValue placeholder="All Tags" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tags</SelectItem>
+                    {tags.map(tag => (
+                      <SelectItem key={tag} value={tag}>
+                        {tag}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Size Filter */}
+                <Select value={selectedSize} onValueChange={setSelectedSize}>
+                  <SelectTrigger className="input-reforma">
+                    <SelectValue placeholder="All Sizes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sizes</SelectItem>
+                    <SelectItem value="XS">XS</SelectItem>
+                    <SelectItem value="S">S</SelectItem>
+                    <SelectItem value="M">M</SelectItem>
+                    <SelectItem value="L">L</SelectItem>
+                    <SelectItem value="XL">XL</SelectItem>
+                    <SelectItem value="XXL">XXL</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* GSM Filter */}
+                <Select value={selectedGsm} onValueChange={setSelectedGsm}>
+                  <SelectTrigger className="input-reforma">
+                    <SelectValue placeholder="All GSM" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All GSM</SelectItem>
+                    {gsmOptions.map(gsm => (
+                      <SelectItem key={gsm} value={gsm.toString()}>
+                        {gsm} GSM
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="flex items-center gap-4">
+
+              {/* Sort and View Mode */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex gap-2">
-                  <Button
-                    variant={viewMode === "grid" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setViewMode("grid")}
-                    className="btn-reforma"
-                  >
-                    <Grid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "list" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setViewMode("list")}
-                    className="btn-reforma"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-48 input-reforma">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="name">Name A-Z</SelectItem>
+                      <SelectItem value="price-low">Price: Low to High</SelectItem>
+                      <SelectItem value="price-high">Price: High to Low</SelectItem>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
-                <Badge variant="secondary" className="badge-reforma">
-                  {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
-                </Badge>
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-2">
+                    <Button
+                      variant={viewMode === "grid" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setViewMode("grid")}
+                      className="btn-reforma"
+                    >
+                      <Grid className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "list" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setViewMode("list")}
+                      className="btn-reforma"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <Badge variant="secondary" className="badge-reforma">
+                    {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Products Grid */}
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
+          <motion.div 
+            className="text-center py-12"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+          >
             <p className="text-xl text-muted-foreground mb-4">No products found</p>
             <p className="text-muted-foreground">Try adjusting your filters or search terms</p>
-          </div>
+          </motion.div>
         ) : (
-          <div className={`grid gap-8 ${
-            viewMode === "grid" 
-              ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
-              : "grid-cols-1"
-          }`}>
-            {filteredProducts.map(product => (
-              <ProductCard
+          <motion.div 
+            className={`grid gap-8 ${
+              viewMode === "grid" 
+                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
+                : "grid-cols-1"
+            }`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            {filteredProducts.map((product, index) => (
+              <motion.div
                 key={product.id}
-                product={transformProductForCard(product)}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+              >
+                <ProductCard
+                  product={transformProductForCard(product)}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Menu, X, ShoppingBag, Settings, User, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
@@ -78,93 +79,138 @@ const Header = () => {
 
   return (
     <>
-      <header className="fixed top-0 w-full z-50 bg-card/95 backdrop-blur-md border-b border-border shadow-soft">
+      <motion.header 
+        className="fixed top-0 w-full z-50 bg-card/95 backdrop-blur-md border-b border-border shadow-soft"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="serif-heading text-2xl font-bold text-reforma-brown flex items-center">
-              <span className="mr-2">RĒFORMA</span>
-            </Link>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Link to="/" className="serif-heading text-2xl font-bold text-reforma-brown flex items-center">
+                <span className="mr-2">RĒFORMA</span>
+              </Link>
+            </motion.div>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-8">
-              {navigation.map((item) => (
-                <Link
+              {navigation.map((item, index) => (
+                <motion.div
                   key={item.name}
-                  to={item.href}
-                  className="text-muted-foreground hover:text-reforma-brown transition-colors duration-300 font-medium"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 * index }}
                 >
-                  {item.name}
-                </Link>
+                  <Link
+                    to={item.href}
+                    className="text-muted-foreground hover:text-reforma-brown transition-colors duration-300 font-medium"
+                  >
+                    {item.name}
+                  </Link>
+                </motion.div>
               ))}
             </nav>
 
             {/* Right side actions */}
             <div className="hidden md:flex items-center space-x-4">
-              <Button asChild variant="ghost" size="icon" className="relative hover:bg-accent/10">
-                <Link to="/cart">
-                  <ShoppingBag className="h-5 w-5" />
-                  {totalItems > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-reforma-sage text-accent-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                      {totalItems}
-                    </span>
-                  )}
-                </Link>
-              </Button>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
+              >
+                <Button asChild variant="ghost" size="icon" className="relative hover:bg-accent/10">
+                  <Link to="/cart">
+                    <ShoppingBag className="h-5 w-5" />
+                    {totalItems > 0 && (
+                      <motion.span 
+                        className="absolute -top-1 -right-1 bg-reforma-sage text-accent-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      >
+                        {totalItems}
+                      </motion.span>
+                    )}
+                  </Link>
+                </Button>
+              </motion.div>
               
               {/* Show profile/login based on user state */}
               {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="border-reforma-sage text-reforma-brown hover:bg-reforma-sage/10">
-                      <User className="h-4 w-4 mr-2" />
-                      {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Profile'}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.6 }}
+                >
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="border-reforma-sage text-reforma-brown hover:bg-reforma-sage/10">
                         <User className="h-4 w-4 mr-2" />
-                        Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile?tab=orders">
-                        <ShoppingBag className="h-4 w-4 mr-2" />
-                        Orders
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile?tab=settings">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Settings
-                      </Link>
-                    </DropdownMenuItem>
-                    {isAdmin && (
+                        {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Profile'}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem asChild>
-                        <Link to="/admin">
-                          <Shield className="h-4 w-4 mr-2" />
-                          Admin Dashboard
+                        <Link to="/profile">
+                          <User className="h-4 w-4 mr-2" />
+                          Dashboard
                         </Link>
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Log Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile?tab=orders">
+                          <ShoppingBag className="h-4 w-4 mr-2" />
+                          Orders
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile?tab=settings">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      {isAdmin && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin">
+                            <Shield className="h-4 w-4 mr-2" />
+                            Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Log Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </motion.div>
               ) : (
-                <Button asChild size="sm" className="btn-reforma">
-                  <Link to="/auth">
-                    Login
-                  </Link>
-                </Button>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.6 }}
+                >
+                  <Button asChild size="sm" className="btn-reforma">
+                    <Link to="/auth">
+                      Login
+                    </Link>
+                  </Button>
+                </motion.div>
               )}
             </div>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <motion.div
+              className="md:hidden"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.7 }}
+            >
               <Button
                 variant="ghost"
                 size="icon"
@@ -177,12 +223,18 @@ const Header = () => {
                   <Menu className="h-6 w-6" />
                 )}
               </Button>
-            </div>
+            </motion.div>
           </div>
 
           {/* Mobile Navigation */}
           {isMenuOpen && (
-            <div className="md:hidden">
+            <motion.div 
+              className="md:hidden"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               <div className="px-2 pt-2 pb-3 space-y-1 bg-card border border-border rounded-lg mt-2 shadow-elegant">
                 {navigation.map((item) => (
                   <Link
@@ -250,14 +302,19 @@ const Header = () => {
                   </Link>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
-      </header>
+      </motion.header>
 
       {/* Floating Admin Access Button - Show only for admins after welcome animation */}
       {localStorage.getItem('reforma_welcome_completed') && isAdmin && (
-        <div className="fixed bottom-6 right-6 z-40 animate-fade-in-up">
+        <motion.div 
+          className="fixed bottom-6 right-6 z-40"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 1 }}
+        >
           <Button 
             asChild 
             className="btn-reforma shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
@@ -268,7 +325,7 @@ const Header = () => {
               Admin Dashboard
             </Link>
           </Button>
-        </div>
+        </motion.div>
       )}
     </>
   );

@@ -861,6 +861,10 @@ Contrast: White #FFFFFF for clarity.
       font-size: 1.25rem;
     }
     
+    .text-2xl {
+      font-size: 1.25rem;
+    }
+    
     .btn {
       padding: 0.5rem 1rem;
       font-size: 0.875rem;
@@ -984,5 +988,100 @@ Contrast: White #FFFFFF for clarity.
       opacity: 1;
       transform: scale(1);
     }
+  }
+  
+  /* New animations for enhanced experience */
+  @keyframes floatIn {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-float-in {
+    animation: floatIn 0.6s ease-out forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  }
+  
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease forwards;
+  }
+  
+  /* Staggered entrance animations */
+  .staggered-enter {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  
+  .staggered-enter.animate {
+    animation: fadeInUp 0.6s ease forwards;
+  }
+  
+  /* Hover effects for interactive elements */
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Pulse animation for attention */
+  @keyframes pulse-subtle {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s infinite;
+  }
+  
+  /* Smooth reveal animations */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

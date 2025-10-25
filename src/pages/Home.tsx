@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
@@ -118,7 +119,8 @@ const Home = () => {
     tags: product.tags,
     discount_percentage: product.discount_percentage,
     discounted_price: product.discounted_price,
-    is_on_sale: product.is_on_sale
+    is_on_sale: product.is_on_sale,
+    featured: product.featured
   });
 
   return (
@@ -128,39 +130,79 @@ const Home = () => {
       
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden luxury-section">
-        <div 
+        <motion.div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url(${heroImage})`
           }}
+          initial={{ scale: 1.1 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
         >
           {/* Semi-transparent overlay for better text visibility */}
           <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/20 to-background/40" />
-        </div>
+        </motion.div>
         
         {/* Luxury Brand Animation */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="luxury-animation-container opacity-20">
-            <div className="luxury-circle luxury-circle-1"></div>
-            <div className="luxury-circle luxury-circle-2"></div>
-            <div className="luxury-circle luxury-circle-3"></div>
+            <motion.div 
+              className="luxury-circle luxury-circle-1"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            ></motion.div>
+            <motion.div 
+              className="luxury-circle luxury-circle-2"
+              animate={{ rotate: -360 }}
+              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            ></motion.div>
+            <motion.div 
+              className="luxury-circle luxury-circle-3"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            ></motion.div>
           </div>
         </div>
         
-        <div className="relative z-10 text-center max-w-4xl mx-auto px-4 mobile-padding">
-          <h1 className="serif-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-6 sm:mb-8 animate-luxury-scale-in text-reforma-brown font-extrabold luxury-heading">
+        <motion.div 
+          className="relative z-10 text-center max-w-4xl mx-auto px-4 mobile-padding"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+        >
+          <motion.h1 
+            className="serif-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-6 sm:mb-8 text-reforma-brown font-extrabold luxury-heading"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
             RĒFORMA
-          </h1>
+          </motion.h1>
           
-          <p className="text-xl sm:text-2xl md:text-3xl text-reforma-brown mb-6 animate-luxury-fade-in animate-stagger-1 font-light">
+          <motion.p 
+            className="text-xl sm:text-2xl md:text-3xl text-reforma-brown mb-6 animate-luxury-fade-in animate-stagger-1 font-light"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+          >
             Fashion. Reimagined.
-          </p>
+          </motion.p>
           
-          <p className="text-base sm:text-lg md:text-xl text-reforma-brown/80 mb-8 sm:mb-12 max-w-2xl mx-auto animate-luxury-fade-in animate-stagger-2 leading-relaxed">
+          <motion.p 
+            className="text-base sm:text-lg md:text-xl text-reforma-brown/80 mb-8 sm:mb-12 max-w-2xl mx-auto animate-luxury-fade-in animate-stagger-2 leading-relaxed"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+          >
             Minimalist elegance for deep thinkers. Where sophisticated design meets conscious choices.
-          </p>
+          </motion.p>
           
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center animate-luxury-fade-in animate-stagger-3">
+          <motion.div 
+            className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center animate-luxury-fade-in animate-stagger-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.9 }}
+          >
             <Button asChild size="lg" className="luxury-btn-primary px-6 py-3 sm:px-8 sm:py-4 text-base touch-friendly">
               <Link to="/shop">
                 Explore Collection
@@ -174,135 +216,237 @@ const Home = () => {
                 <Sparkles className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Link>
             </Button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 animate-gentle-float">
-          <div className="w-5 h-8 sm:w-6 sm:h-10 border-2 border-reforma-brown rounded-full flex justify-center">
-            <div className="w-1 h-2 sm:w-1 sm:h-3 bg-reforma-brown rounded-full mt-1 sm:mt-2 animate-bounce"></div>
-          </div>
-        </div>
+        <motion.div 
+          className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.2 }}
+        >
+          <motion.div 
+            className="w-5 h-8 sm:w-6 sm:h-10 border-2 border-reforma-brown rounded-full flex justify-center"
+            animate={{ y: [0, 5, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <div className="w-1 h-2 sm:w-1 sm:h-3 bg-reforma-brown rounded-full mt-1 sm:mt-2"></div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* Featured Collections */}
-      <section className="py-16 sm:py-20 md:py-24 luxury-section-divider scroll-fade-in">
+      <motion.section 
+        className="py-16 sm:py-20 md:py-24 luxury-section-divider scroll-fade-in"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16 md:mb-20">
+          <motion.div 
+            className="text-center mb-12 sm:mb-16 md:mb-20"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, margin: "-100px" }}
+          >
             <h2 className="serif-heading text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-reforma-brown luxury-heading">
               Featured Collections
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Curated pieces that embody our signature aesthetic and craftsmanship.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {featuredProducts.map((product, index) => (
-              <div 
+              <motion.div 
                 key={product.id} 
-                className="animate-luxury-fade-in"
-                style={{
-                  animationDelay: `${index * 0.1}s`
-                }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true, margin: "-50px" }}
               >
                 <ProductCard product={transformProductForCard(product)} />
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          <div className="text-center mt-12 sm:mt-16">
+          <motion.div 
+            className="text-center mt-12 sm:mt-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
             <Button asChild size="lg" className="luxury-btn-outline px-6 sm:px-8 touch-friendly">
               <Link to="/shop?featured=true">
                 View All Featured
                 <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Link>
             </Button>
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Latest Uploads */}
-      <section className="py-16 sm:py-20 md:py-24 bg-card scroll-fade-in">
+      <motion.section 
+        className="py-16 sm:py-20 md:py-24 bg-card scroll-fade-in"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16 md:mb-20">
+          <motion.div 
+            className="text-center mb-12 sm:mb-16 md:mb-20"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, margin: "-100px" }}
+          >
             <h2 className="serif-heading text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-reforma-brown luxury-heading">
               Latest Uploads
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Fresh additions to our collection, crafted with attention to detail.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {latestProducts.map((product, index) => (
-              <div 
+              <motion.div 
                 key={product.id} 
-                className="animate-luxury-fade-in"
-                style={{
-                  animationDelay: `${index * 0.1}s`
-                }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true, margin: "-50px" }}
               >
                 <ProductCard product={transformProductForCard(product)} />
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          <div className="text-center mt-12 sm:mt-16">
+          <motion.div 
+            className="text-center mt-12 sm:mt-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
             <Button asChild size="lg" className="luxury-btn-primary px-6 sm:px-8 touch-friendly">
               <Link to="/shop">
                 View All Products
                 <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Link>
             </Button>
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Threads of Thought Story */}
-      <section className="py-16 sm:py-20 md:py-24 luxury-section scroll-fade-in">
+      <motion.section 
+        className="py-16 sm:py-20 md:py-24 luxury-section scroll-fade-in"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
+          <motion.div 
+            className="max-w-4xl mx-auto text-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, margin: "-100px" }}
+          >
             <h2 className="serif-heading text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 text-reforma-brown luxury-heading">
               Threads of Thought
             </h2>
             <div className="prose prose-xl max-w-none text-muted-foreground leading-relaxed space-y-4 sm:space-y-6">
-              <p className="text-base sm:text-lg">
+              <motion.p 
+                className="text-base sm:text-lg"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
                 In a world saturated with noise, we create for the quiet minds. The deep thinkers who find beauty in simplicity, meaning in minimalism, and truth in authentic expression.
-              </p>
-              <p className="text-base sm:text-lg">
+              </motion.p>
+              <motion.p 
+                className="text-base sm:text-lg"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                viewport={{ once: true }}
+              >
                 RĒFORMA represents the intersection of conscious design and sophisticated aesthetics. Each piece is thoughtfully crafted for those who understand that true luxury lies not in ostentation, but in the quiet confidence of knowing you've chosen well.
-              </p>
-              <p className="text-base sm:text-lg font-medium text-reforma-brown">
+              </motion.p>
+              <motion.p 
+                className="text-base sm:text-lg font-medium text-reforma-brown"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+                viewport={{ once: true }}
+              >
                 Fashion. Reimagined for the thinking mind.
-              </p>
+              </motion.p>
             </div>
             
-            <div className="mt-8 sm:mt-12">
+            <motion.div 
+              className="mt-8 sm:mt-12"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.8 }}
+              viewport={{ once: true }}
+            >
               <Button asChild size="lg" className="luxury-btn-primary px-6 sm:px-8 touch-friendly">
                 <Link to="/about">
                   Discover Our Story
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>
               </Button>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Newsletter Section */}
-      <section className="py-16 sm:py-20 md:py-24 bg-gradient-sage luxury-section scroll-fade-in">
+      <motion.section 
+        className="py-16 sm:py-20 md:py-24 bg-gradient-sage luxury-section scroll-fade-in"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="serif-heading text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-reforma-brown luxury-heading">
+          <motion.h2 
+            className="serif-heading text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-reforma-brown luxury-heading"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
             Join the Thought Collective
-          </h2>
-          <p className="text-base sm:text-lg text-reforma-brown/80 mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed">
+          </motion.h2>
+          <motion.p 
+            className="text-base sm:text-lg text-reforma-brown/80 mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
             Be the first to discover new collections, exclusive insights, and the philosophy behind conscious fashion.
-          </p>
+          </motion.p>
           
-          <NewsletterForm />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            viewport={{ once: true }}
+          >
+            <NewsletterForm />
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 };
