@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
+import NewsletterForm from "@/components/NewsletterForm";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-image.jpg";
 
@@ -299,16 +300,7 @@ const Home = () => {
             Be the first to discover new collections, exclusive insights, and the philosophy behind conscious fashion.
           </p>
           
-          <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-3">
-            <input 
-              type="email" 
-              placeholder="Enter your email" 
-              className="flex-1 px-4 py-3 sm:px-6 sm:py-4 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-reforma-sage text-foreground luxury-input" 
-            />
-            <Button className="luxury-btn-primary px-6 py-3 sm:px-8 sm:py-4 touch-friendly">
-              Subscribe
-            </Button>
-          </div>
+          <NewsletterForm />
         </div>
       </section>
     </div>

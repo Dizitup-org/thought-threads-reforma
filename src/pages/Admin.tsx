@@ -39,7 +39,7 @@ const Admin = () => {
     description: "",
     featured: false,
     tags: [] as string[],
-    discount: 0,
+    discount_percentage: 0,
     images: [] as string[]
   });
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -151,6 +151,8 @@ const Admin = () => {
     fetchCollections();
     fetchStats();
     fetchSaleBanners();
+    fetchOrders();
+    fetchEmailSignups();
     
     // Set up real-time subscriptions for all tables
     const productsChannel = supabase
@@ -187,6 +189,7 @@ const Admin = () => {
         table: 'orders'
       }, () => {
         fetchStats();
+        fetchOrders();
       })
       .subscribe();
 
@@ -198,6 +201,7 @@ const Admin = () => {
         table: 'email_signups'
       }, () => {
         fetchStats();
+        fetchEmailSignups();
       })
       .subscribe();
 
@@ -354,17 +358,18 @@ const Admin = () => {
     
     try {
       const productData: any = {
-        product_name: productForm.product_name,
+        name: productForm.product_name,
         price: parseFloat(productForm.price),
         collection: productForm.collection,
         stock: parseInt(productForm.stock),
         sizes: productForm.sizes,
-        gsm_options: productForm.gsm_options,
+        gsm: productForm.gsm_options,
         description: productForm.description,
         featured: productForm.featured,
         tags: productForm.tags,
-        discount: productForm.discount,
-        images: productForm.images
+        discount_percentage: productForm.discount_percentage,
+        image_url: productForm.images[0] || null,
+        image_file_path: productForm.images.join(',') // Store all images as comma-separated
       };
 
       // Use admin client for full permissions
@@ -456,8 +461,8 @@ const Admin = () => {
       description: product.description || "",
       featured: product.featured || false,
       tags: product.tags || [],
-      discount: product.discount || product.discount_percentage || 0,
-      images: product.images || (product.image_url ? [product.image_url] : [])
+      discount_percentage: product.discount_percentage || 0,
+      images: product.image_file_path ? product.image_file_path.split(',').filter((img: string) => img.trim()) : (product.image_url ? [product.image_url] : [])
     });
     setEditingProduct(product.id);
   };
@@ -473,7 +478,7 @@ const Admin = () => {
       description: "",
       featured: false,
       tags: [],
-      discount: 0,
+      discount_percentage: 0,
       images: []
     });
     setEditingProduct(null);
@@ -1010,14 +1015,14 @@ const Admin = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="discount">Discount Percentage (%)</Label>
+                      <Label htmlFor="discount_percentage">Discount Percentage (%)</Label>
                       <Input
-                        id="discount"
+                        id="discount_percentage"
                         type="number"
                         min="0"
                         max="100"
-                        value={productForm.discount}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, discount: parseInt(e.target.value) || 0 }))}
+                        value={productForm.discount_percentage}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, discount_percentage: parseInt(e.target.value) || 0 }))}
                         placeholder="0"
                         className="input-reforma"
                       />
@@ -1085,9 +1090,9 @@ const Admin = () => {
                               GSM: {(product.gsm_options || product.gsm).join(', ')}
                             </p>
                           )}
-                          {(product.discount || product.discount_percentage) > 0 && (
+                          {product.discount_percentage > 0 && (
                             <Badge variant="destructive" className="text-xs mt-1">
-                              {(product.discount || product.discount_percentage)}% OFF
+                              {product.discount_percentage}% OFF
                             </Badge>
                           )}
                         </div>
