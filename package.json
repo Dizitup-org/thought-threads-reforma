@@ -8,7 +8,10 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "fix-rls": "node apply-migration.js",
+    "test-rls": "node test-rls-fix.js",
+    "show-fix-sql": "node show-fix-sql.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

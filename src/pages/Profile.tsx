@@ -163,40 +163,21 @@ export default function Profile() {
     setIsUploading(true);
     
     try {
-      // Check if avatars bucket exists
-      try {
-        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-        if (bucketError) {
-          console.warn('Error listing buckets:', bucketError);
-        } else {
-          const avatarsBucket = buckets?.find(bucket => bucket.name === 'avatars');
-          
-          if (!avatarsBucket) {
-            // Try to create the bucket
-            const { error: createError } = await supabase.storage.createBucket('avatars', {
-              public: true
-            });
-            
-            if (createError) {
-              console.warn('Could not create avatars bucket:', createError);
-            } else {
-              console.log('Successfully created avatars bucket');
-            }
-          }
-        }
-      } catch (bucketError) {
-        console.warn('Error checking/creating avatars bucket:', bucketError);
-      }
-      
-      // Upload file
+      // Upload file with explicit bucket creation handling
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
       
       if (uploadError) {
-        // If it's a bucket not found error, provide a more helpful message
-        if (uploadError.message.includes('Bucket not found')) {
-          throw new Error('Storage bucket "avatars" not found. Please ensure the bucket exists in your Supabase Storage dashboard and is set as public.');
+        // If it's a bucket not found error, provide specific instructions
+        if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('not found')) {
+          toast({
+            title: "Storage Setup Required",
+            description: "Please create the 'avatars' bucket in your Supabase dashboard. Go to Supabase → Storage → Create Bucket → Name: avatars, Public: true",
+            variant: "destructive",
+          });
+          setIsUploading(false);
+          return;
         }
         throw uploadError;
       }
@@ -225,7 +206,7 @@ export default function Profile() {
       console.error('Avatar upload error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to upload avatar. Please check that the 'avatars' bucket exists and is public in your Supabase dashboard.",
+        description: error.message || "Failed to upload avatar. Please ensure the 'avatars' bucket exists in your Supabase Storage dashboard.",
         variant: "destructive",
       });
     } finally {
