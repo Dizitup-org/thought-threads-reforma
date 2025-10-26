@@ -75,22 +75,14 @@ const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
       setIsLoading(true);
       
       try {
-        // Save user data to guest_users table
-        const { data, error } = await supabase
-          .from('guest_users')
-          .insert([
-            {
-              name: name.trim(),
-              email: email.trim(),
-              phone: phone.trim()
-            }
-          ])
-          .select();
+        // Store user data locally
+        const userData = {
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim()
+        };
         
-        if (error) {
-          console.error('Error saving guest user data:', error);
-          // Still proceed with onboarding even if save fails
-        }
+        localStorage.setItem('reforma_user_data', JSON.stringify(userData));
         
         onComplete({
           name: name.trim(),

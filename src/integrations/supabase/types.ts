@@ -22,7 +22,6 @@ export type Database = {
           created_at: string
           id: string
           is_default: boolean | null
-          label: string | null
           pincode: string
           state: string
           updated_at: string
@@ -35,7 +34,6 @@ export type Database = {
           created_at?: string
           id?: string
           is_default?: boolean | null
-          label?: string | null
           pincode: string
           state: string
           updated_at?: string
@@ -48,7 +46,6 @@ export type Database = {
           created_at?: string
           id?: string
           is_default?: boolean | null
-          label?: string | null
           pincode?: string
           state?: string
           updated_at?: string
@@ -372,7 +369,6 @@ export type Database = {
           name: string
           phone: string | null
           updated_at: string
-          username: string | null
         }
         Insert: {
           auth_user_id: string
@@ -383,7 +379,6 @@ export type Database = {
           name: string
           phone?: string | null
           updated_at?: string
-          username?: string | null
         }
         Update: {
           auth_user_id?: string
@@ -394,36 +389,44 @@ export type Database = {
           name?: string
           phone?: string | null
           updated_at?: string
-          username?: string | null
         }
         Relationships: []
       }
-      guest_users: {
+      wishlist: {
         Row: {
           created_at: string
-          email: string
           id: string
-          name: string
-          phone: string | null
-          updated_at: string
+          product_id: string
+          user_id: string
         }
         Insert: {
           created_at?: string
-          email: string
           id?: string
-          name: string
-          phone?: string | null
-          updated_at?: string
+          product_id: string
+          user_id: string
         }
         Update: {
           created_at?: string
-          email?: string
           id?: string
-          name?: string
-          phone?: string | null
-          updated_at?: string
+          product_id?: string
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wishlist_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

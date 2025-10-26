@@ -593,6 +593,37 @@ const Admin = () => {
     }
   };
 
+  const deleteBanner = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this banner? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const adminClient = getAdminClient();
+      const { error } = adminClient
+        ? await adminClient.from('sale_banners').delete().eq('id', id)
+        : await supabase.from('sale_banners').delete().eq('id', id);
+
+      if (error) {
+        console.error('Delete banner error:', error);
+        throw new Error(error.message);
+      }
+
+      toast({
+        title: "Banner deleted!",
+        description: "Banner has been permanently removed.",
+      });
+      // Banners will auto-refresh via real-time subscription
+    } catch (error: any) {
+      console.error('Error deleting banner:', error);
+      toast({
+        title: "Error deleting banner",
+        description: error.message || "Failed to delete banner.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Enhanced image upload function with better error handling
   const handleImageUpload = async (file: File) => {
     try {
@@ -1329,14 +1360,23 @@ const Admin = () => {
                             Status: {banner.is_active ? 'Active' : 'Inactive'}
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleBannerStatus(banner.id, banner.is_active)}
-                          className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
-                        >
-                          {banner.is_active ? 'Deactivate' : 'Activate'}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleBannerStatus(banner.id, banner.is_active)}
+                            className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
+                          >
+                            {banner.is_active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteBanner(banner.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>

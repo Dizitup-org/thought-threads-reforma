@@ -24,11 +24,26 @@ interface Address extends Tables<"addresses"> {}
 interface Order extends Tables<"orders"> {
   addresses?: Pick<Tables<"addresses">, "id" | "address_line" | "city" | "state" | "pincode" | "country" | "is_default"> | null;
 }
+interface WishlistItem {
+  id: string;
+  product_id: string;
+  created_at: string;
+  products: {
+    id: string;
+    name: string;
+    price: number;
+    image_url: string | null;
+    collection: string;
+    discounted_price: number | null;
+    is_on_sale: boolean | null;
+  };
+}
 
 export default function Profile() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
@@ -36,7 +51,6 @@ export default function Profile() {
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [newAddress, setNewAddress] = useState({
-    label: "",
     address_line: "",
     city: "",
     state: "",
@@ -46,8 +60,7 @@ export default function Profile() {
   const [profileForm, setProfileForm] = useState({
     name: "",
     email: "",
-    phone: "",
-    username: ""
+    phone: ""
   });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -103,8 +116,7 @@ export default function Profile() {
         setProfileForm({
           name: profile.name || "",
           email: profile.email || "",
-          phone: profile.phone || "",
-          username: profile.username || ""
+          phone: profile.phone || ""
         });
         
         // Fetch addresses
@@ -135,6 +147,28 @@ export default function Profile() {
           .order("created_at", { ascending: false });
         
         setOrders(ordersData || []);
+
+        // Fetch wishlist
+        const { data: wishlistData } = await supabase
+          .from("wishlist")
+          .select(`
+            id,
+            product_id,
+            created_at,
+            products (
+              id,
+              name,
+              price,
+              image_url,
+              collection,
+              discounted_price,
+              is_on_sale
+            )
+          `)
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false });
+        
+        setWishlist(wishlistData || []);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -158,13 +192,25 @@ export default function Profile() {
     
     const file = e.target.files[0];
     const fileExt = file.name.split(".").pop();
-    const fileName = `${user.id}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
+    
+    // Get auth user ID for proper RLS
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to upload a profile picture",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const fileName = `${authUser.id}.${fileExt}`;
+    const filePath = `${authUser.id}/${fileName}`;
     
     setIsUploading(true);
     
     try {
-      // Upload file
+      // Upload file with correct folder structure for RLS
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(filePath, file, { upsert: true });
@@ -230,7 +276,7 @@ export default function Profile() {
         toast({ title: "Address added successfully!" });
       }
       
-      setNewAddress({ label: "", address_line: "", city: "", state: "", pincode: "", country: "India" });
+      setNewAddress({ address_line: "", city: "", state: "", pincode: "", country: "India" });
       setEditingAddress(null);
       setIsAddressDialogOpen(false);
       fetchUserData();
@@ -270,8 +316,7 @@ export default function Profile() {
         .from("users")
         .update({ 
           name: profileForm.name, 
-          phone: profileForm.phone,
-          username: profileForm.username
+          phone: profileForm.phone
         })
         .eq("id", user.id);
       
@@ -281,8 +326,7 @@ export default function Profile() {
       setUser({ 
         ...user, 
         name: profileForm.name, 
-        phone: profileForm.phone,
-        username: profileForm.username
+        phone: profileForm.phone
       });
       
       toast({ title: "Profile updated successfully!" });
@@ -496,14 +540,6 @@ export default function Profile() {
                         <Input value={profileForm.email} disabled />
                       </div>
                       <div>
-                        <Label>Username</Label>
-                        <Input
-                          value={profileForm.username}
-                          onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
-                          placeholder="Choose a username"
-                        />
-                      </div>
-                      <div>
                         <Label>Phone</Label>
                         <Input
                           value={profileForm.phone || ""}
@@ -547,14 +583,6 @@ export default function Profile() {
                           </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
-                          <div>
-                            <Label>Label</Label>
-                            <Input
-                              placeholder="Home, Office, etc."
-                              value={newAddress.label}
-                              onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
-                            />
-                          </div>
                           <div>
                             <Label>Address Line</Label>
                             <Input
@@ -620,12 +648,6 @@ export default function Profile() {
                           >
                             <div className="flex justify-between items-start">
                               <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <p className="font-semibold">{address.label}</p>
-                                  {address.is_default && (
-                                    <Badge variant="secondary">Default</Badge>
-                                  )}
-                                </div>
                                 <p className="text-sm">{address.address_line}</p>
                                 <p className="text-sm text-muted-foreground">
                                   {address.city}, {address.state} - {address.pincode}
@@ -639,7 +661,6 @@ export default function Profile() {
                                   onClick={() => {
                                     setEditingAddress(address);
                                     setNewAddress({
-                                      label: address.label || "",
                                       address_line: address.address_line,
                                       city: address.city,
                                       state: address.state,
@@ -736,16 +757,84 @@ export default function Profile() {
                     <CardDescription>Your favorite items</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-12">
-                      <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Your wishlist is empty</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Save items that you like to your wishlist
-                      </p>
-                      <Button asChild>
-                        <a href="/shop">Browse Products</a>
-                      </Button>
-                    </div>
+                    {wishlist.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">Your wishlist is empty</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Save items that you like to your wishlist
+                        </p>
+                        <Button asChild>
+                          <a href="/shop">Browse Products</a>
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {wishlist.map((item, index) => (
+                          <motion.div
+                            key={item.id}
+                            className="border rounded-lg overflow-hidden"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                          >
+                            <a href={`/product/${item.product_id}`}>
+                              {item.products.image_url && (
+                                <img
+                                  src={item.products.image_url}
+                                  alt={item.products.name}
+                                  className="w-full h-48 object-cover"
+                                />
+                              )}
+                              <div className="p-4">
+                                <h3 className="font-semibold mb-1">{item.products.name}</h3>
+                                <p className="text-sm text-muted-foreground mb-2">{item.products.collection}</p>
+                                <div className="flex items-center justify-between">
+                                  {item.products.is_on_sale ? (
+                                    <div>
+                                      <p className="text-sm line-through text-muted-foreground">₹{item.products.price}</p>
+                                      <p className="font-bold text-destructive">₹{item.products.discounted_price}</p>
+                                    </div>
+                                  ) : (
+                                    <p className="font-bold">₹{item.products.price}</p>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={async (e) => {
+                                      e.preventDefault();
+                                      try {
+                                        const { error } = await supabase
+                                          .from("wishlist")
+                                          .delete()
+                                          .eq("id", item.id);
+                                        
+                                        if (error) throw error;
+                                        
+                                        toast({
+                                          title: "Removed from wishlist",
+                                          description: `${item.products.name} has been removed from your wishlist`,
+                                        });
+                                        
+                                        fetchUserData();
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Error",
+                                          description: error.message,
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </a>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
