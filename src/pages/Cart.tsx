@@ -28,10 +28,9 @@ const Cart = () => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
 
-  // Temporarily bypass auth check
+  // Check authentication and load user
   useEffect(() => {
-    // Set a mock user for testing
-    setUser({ id: "test-user-id" });
+    checkAuthStatus();
     loadAdminSettings();
     
     // Load user data from welcome animation if available
@@ -135,9 +134,10 @@ const Cart = () => {
   const handleIHavePaid = async () => {
     setLoading(true);
     try {
-      // Save orders to database (best effort)
+      // Save orders to database with user_id for proper syncing
       const orderPromises = items.map(item => {
         const orderData = {
+          user_id: user?.id || null,
           product_id: item.id,
           product_name: item.name,
           size: item.size,

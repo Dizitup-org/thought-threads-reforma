@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Upload, Users, Package, Mail, Shield } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, Users, Package, Mail, Shield, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase, getAdminClient } from "@/integrations/supabase/client";
 
@@ -46,7 +46,8 @@ const Admin = () => {
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
-    emailSignups: 0
+    emailSignups: 0,
+    totalUsers: 0
   });
   const [saleBanners, setSaleBanners] = useState<any[]>([]);
   const [bannerForm, setBannerForm] = useState({ message: "", is_active: true });
@@ -59,6 +60,7 @@ const Admin = () => {
   const [emailSignups, setEmailSignups] = useState<any[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [usePremiumAnimation, setUsePremiumAnimation] = useState(true);
+  const [users, setUsers] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -160,6 +162,7 @@ const Admin = () => {
     fetchSaleBanners();
     fetchOrders();
     fetchEmailSignups();
+    fetchUsers();
     
     // Set up real-time subscriptions for all tables
     const productsChannel = supabase
@@ -212,11 +215,24 @@ const Admin = () => {
       })
       .subscribe();
 
+    const usersChannel = supabase
+      .channel('users-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'users'
+      }, () => {
+        fetchStats();
+        fetchUsers();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(productsChannel);
       supabase.removeChannel(bannersChannel);
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(emailsChannel);
+      supabase.removeChannel(usersChannel);
     };
   }, []);
 
@@ -263,16 +279,18 @@ const Admin = () => {
 
   const fetchStats = async () => {
     try {
-      const [productsCount, ordersCount, emailsCount] = await Promise.all([
+      const [productsCount, ordersCount, emailsCount, usersCount] = await Promise.all([
         supabase.from('products').select('*', { count: 'exact', head: true }),
         supabase.from('orders').select('*', { count: 'exact', head: true }),
-        supabase.from('email_signups').select('*', { count: 'exact', head: true })
+        supabase.from('email_signups').select('*', { count: 'exact', head: true }),
+        supabase.from('users').select('*', { count: 'exact', head: true })
       ]);
 
       setStats({
         totalProducts: productsCount.count || 0,
         totalOrders: ordersCount.count || 0,
-        emailSignups: emailsCount.count || 0
+        emailSignups: emailsCount.count || 0,
+        totalUsers: usersCount.count || 0
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -304,6 +322,20 @@ const Admin = () => {
       setEmailSignups(data || []);
     } catch (error) {
       console.error('Error fetching email signups:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
     }
   };
 
@@ -772,16 +804,17 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="emails">Email List</TabsTrigger>
             <TabsTrigger value="banners">Sale Banners</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {/* Welcome Animation Toggle */}
               <Card>
                 <CardHeader>
@@ -848,10 +881,20 @@ const Admin = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-reforma-brown">{stats.totalOrders}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Registered Users</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-reforma-brown">{stats.totalUsers}</div>
                 </CardContent>
               </Card>
               
@@ -1297,6 +1340,54 @@ const Admin = () => {
                             <p className="font-medium">{signup.email}</p>
                             <p className="text-xs text-muted-foreground">
                               Subscribed: {new Date(signup.subscribed_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center justify-between">
+                  <span>Registered Users</span>
+                  <Badge variant="secondary" className="badge-reforma">
+                    {users.length} Users
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {users.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No registered users yet.</p>
+                ) : (
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                    {users.map(user => (
+                      <div key={user.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                        <div className="flex items-center gap-4">
+                          {user.avatar_url ? (
+                            <img 
+                              src={user.avatar_url} 
+                              alt={user.name} 
+                              className="w-12 h-12 rounded-full object-cover border-2 border-reforma-sage"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-reforma-sage flex items-center justify-center">
+                              <User className="w-6 h-6 text-white" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium text-reforma-brown">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                            {user.phone && (
+                              <p className="text-xs text-muted-foreground">Phone: {user.phone}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              Joined: {new Date(user.created_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
