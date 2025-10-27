@@ -26,7 +26,6 @@ interface Product {
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<string[]>([]);
   const [productForm, setProductForm] = useState({
@@ -53,8 +52,6 @@ const Admin = () => {
   const [bannerForm, setBannerForm] = useState({ message: "", is_active: true });
   const { toast } = useToast();
   const [dbHealth, setDbHealth] = useState<{status: string, message: string}>({status: 'checking', message: 'Checking database connection...'});
-  const [showSetupForm, setShowSetupForm] = useState(false);
-  const [setupForm, setSetupForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [emailSignups, setEmailSignups] = useState<any[]>([]);
@@ -96,58 +93,43 @@ const Admin = () => {
     }
   };
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      // For demo purposes, use simple authentication
-      // In a real application, this would be replaced with proper Supabase auth
-      if (loginForm.email === "admin@reforma.com" && loginForm.password === "admin123") {
-        setIsAuthenticated(true);
-        toast({
-          title: "Welcome back!",
-          description: "Successfully logged in to admin panel.",
-        });
-      } else {
-        // Try to authenticate with Supabase
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('email', loginForm.email)
-          .single();
-        
-        if (error || !data) {
-          toast({
-            title: "Invalid credentials",
-            description: "Please check your email and password.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // In a real app, you would verify the password hash
-        // For now, we'll just check if the user exists
-        setIsAuthenticated(true);
-        toast({
-          title: "Welcome back!",
-          description: "Successfully logged in to admin panel.",
-        });
-      }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      toast({
-        title: "Login failed",
-        description: error.message || "Failed to login. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Temporarily bypass auth check for development
+  // Check if current user is an admin
   useEffect(() => {
-    // For development, auto-login with demo credentials
-    // In production, remove this and use proper authentication
-    setIsAuthenticated(true);
+    const checkAdminStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // Not logged in at all - redirect to admin login
+        window.location.href = '/auth?admin=true';
+        return;
+      }
+      
+      // Check if this user is in admin_users table
+      const { data: admin, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', session.user.email)
+        .single();
+      
+      if (error || !admin) {
+        // Not an admin - sign them out and redirect
+        await supabase.auth.signOut();
+        toast({
+          title: "Access Denied",
+          description: "You don't have admin privileges. Please use regular user login.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 2000);
+        return;
+      }
+      
+      // Valid admin user
+      setIsAuthenticated(true);
+    };
+    
+    checkAdminStatus();
     
     // Check if premium animation is enabled
     const premiumSetting = localStorage.getItem('reforma_premium_welcome');
@@ -749,48 +731,14 @@ const Admin = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen pt-24 pb-12 bg-gradient-warm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-md">
-          <Card className="shadow-elegant">
-            <CardHeader className="text-center">
-              <Shield className="h-12 w-12 text-reforma-brown mx-auto mb-4" />
-              <CardTitle className="serif-heading text-2xl text-reforma-brown">Admin Access</CardTitle>
-              <p className="text-muted-foreground">Sign in to manage your RĒFORMA collection</p>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleAdminLogin} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={loginForm.email}
-                    onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="admin@reforma.com"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Enter password"
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full btn-reforma">
-                  Access Admin Panel
-                </Button>
-              </form>
-              <p className="text-sm text-muted-foreground mt-4 text-center">
-                Demo credentials: admin@reforma.com / admin123
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen pt-24 pb-12 bg-gradient-warm flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader className="text-center">
+            <Shield className="h-12 w-12 text-reforma-brown mx-auto mb-4 animate-pulse" />
+            <CardTitle className="serif-heading text-2xl text-reforma-brown">Verifying Admin Access</CardTitle>
+            <p className="text-muted-foreground">Checking your credentials...</p>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
