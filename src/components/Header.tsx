@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Menu, X, ShoppingBag, Settings, User, Shield, LogOut, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +17,7 @@ import {
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const { totalItems } = useCart();
   const { wishlistCount } = useWishlist();
@@ -27,6 +29,15 @@ const Header = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
+        
+        // Fetch user profile including avatar
+        const { data: profile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('auth_user_id', session.user.id)
+          .single();
+        setUserProfile(profile);
+        
         // Check if user is admin
         const { data: admin } = await supabase
           .from('admin_users')
@@ -43,8 +54,16 @@ const Header = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(session.user);
-        // Check if user is admin
-        const checkAdmin = async () => {
+        // Fetch user profile
+        const fetchProfile = async () => {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('auth_user_id', session.user.id)
+            .single();
+          setUserProfile(profile);
+          
+          // Check if user is admin
           const { data: admin } = await supabase
             .from('admin_users')
             .select('*')
@@ -52,9 +71,10 @@ const Header = () => {
             .single();
           setIsAdmin(!!admin);
         };
-        checkAdmin();
+        fetchProfile();
       } else {
         setUser(null);
+        setUserProfile(null);
         setIsAdmin(false);
       }
     });
@@ -67,6 +87,7 @@ const Header = () => {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setUserProfile(null);
     setIsAdmin(false);
     navigate('/');
   };
@@ -174,9 +195,16 @@ const Header = () => {
                 >
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="border-reforma-sage text-reforma-brown hover:bg-reforma-sage/10">
-                        <User className="h-4 w-4 mr-2" />
-                        {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Profile'}
+                      <Button variant="outline" size="sm" className="border-reforma-sage text-reforma-brown hover:bg-reforma-sage/10 gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={userProfile?.avatar_url || undefined} alt={userProfile?.name || 'User'} />
+                          <AvatarFallback className="bg-reforma-sage text-xs">
+                            {(userProfile?.name || user.email || 'U').charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="hidden sm:inline">
+                          {userProfile?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Profile'}
+                        </span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
