@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu, X, ShoppingBag, Settings, User, Shield, LogOut } from "lucide-react";
+import { Menu, X, ShoppingBag, Settings, User, Shield, LogOut, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ const Header = () => {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const { totalItems } = useCart();
+  const { wishlistCount } = useWishlist();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -123,6 +125,28 @@ const Header = () => {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: 0.5 }}
+              >
+                <Button asChild variant="ghost" size="icon" className="relative hover:bg-accent/10">
+                  <Link to="/profile?tab=wishlist">
+                    <Heart className="h-5 w-5" />
+                    {wishlistCount > 0 && (
+                      <motion.span 
+                        className="absolute -top-1 -right-1 bg-reforma-sage text-accent-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      >
+                        {wishlistCount}
+                      </motion.span>
+                    )}
+                  </Link>
+                </Button>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.55 }}
               >
                 <Button asChild variant="ghost" size="icon" className="relative hover:bg-accent/10">
                   <Link to="/cart">
@@ -248,10 +272,19 @@ const Header = () => {
                 ))}
                 <div className="border-t border-border pt-2 mt-2 space-y-1">
                   <Link
+                    to="/profile?tab=wishlist"
+                    className="block px-3 py-2 text-muted-foreground hover:text-reforma-brown transition-colors duration-300"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Heart className="h-4 w-4 mr-2 inline" />
+                    Wishlist ({wishlistCount})
+                  </Link>
+                  <Link
                     to="/cart"
                     className="block px-3 py-2 text-muted-foreground hover:text-reforma-brown transition-colors duration-300"
                     onClick={() => setIsMenuOpen(false)}
                   >
+                    <ShoppingBag className="h-4 w-4 mr-2 inline" />
                     Cart ({totalItems})
                   </Link>
                   {user ? (

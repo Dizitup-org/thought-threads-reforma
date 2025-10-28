@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "@/hooks/useCart";
+import { WishlistProvider } from "@/hooks/useWishlist";
 import { AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import Header from "./components/Header";
@@ -93,21 +94,23 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <CartProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen bg-background">
-              {showWelcome && (
-                usePremiumAnimation ? (
-                  <PremiumWelcomeAnimation onComplete={handlePremiumAnimationComplete} />
-                ) : (
-                  <WelcomeAnimation onComplete={handleWelcomeComplete} />
-                )
-              )}
-              <Header />
-              <AnimatedRoutes />
-            </div>
-          </BrowserRouter>
+          <WishlistProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <div className="min-h-screen bg-background">
+                {showWelcome && (
+                  usePremiumAnimation ? (
+                    <PremiumWelcomeAnimation onComplete={handlePremiumAnimationComplete} />
+                  ) : (
+                    <WelcomeAnimation onComplete={handleWelcomeComplete} />
+                  )
+                )}
+                <Header />
+                <AnimatedRoutes />
+              </div>
+            </BrowserRouter>
+          </WishlistProvider>
         </CartProvider>
       </TooltipProvider>
     </QueryClientProvider>
