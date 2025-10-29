@@ -22,14 +22,24 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
+          hover: "hsl(var(--secondary-hover))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -38,6 +48,8 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          hover: "hsl(var(--accent-hover))",
+          light: "hsl(var(--accent-light))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -54,6 +66,7 @@ export default {
           brown: "hsl(var(--primary))",
           taupe: "hsl(var(--warm-taupe))",
           sage: "hsl(var(--accent))",
+          cream: "hsl(var(--cream-light))",
         },
       },
       fontFamily: {
@@ -64,16 +77,33 @@ export default {
         'gradient-elegant': 'var(--gradient-elegant)',
         'gradient-warm': 'var(--gradient-warm)',
         'gradient-sage': 'var(--gradient-sage)',
+        'gradient-hero': 'var(--gradient-hero)',
+        'gradient-card': 'var(--gradient-card)',
+        'gradient-shimmer': 'var(--gradient-shimmer)',
       },
       boxShadow: {
         'elegant': 'var(--shadow-elegant)',
         'soft': 'var(--shadow-soft)',
         'crisp': 'var(--shadow-crisp)',
+        'luxury': 'var(--shadow-luxury)',
+        'inner': 'var(--shadow-inner)',
+        'glow-sage': 'var(--glow-sage)',
+        'glow-primary': 'var(--glow-primary)',
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius-lg)",
+        md: "var(--radius)",
+        sm: "var(--radius-sm)",
+      },
+      transitionTimingFunction: {
+        'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'elegant': 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+        'spring': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+      },
+      transitionDuration: {
+        'fast': '200ms',
+        'smooth': '300ms',
+        'elegant': '500ms',
       },
       keyframes: {
         "accordion-down": {
@@ -110,12 +140,30 @@ export default {
             transform: "translateY(-5px)",
           },
         },
+        "shimmer": {
+          "0%": {
+            transform: "translateX(-100%)",
+          },
+          "100%": {
+            transform: "translateX(100%)",
+          },
+        },
+        "glow": {
+          "0%, 100%": {
+            opacity: "1",
+          },
+          "50%": {
+            opacity: "0.5",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in-reforma": "fade-in-reforma 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)",
         "gentle-float": "gentle-float 3s ease-in-out infinite",
+        "shimmer": "shimmer 2s ease-in-out infinite",
+        "glow": "glow 2s ease-in-out infinite",
       },
     },
   },
