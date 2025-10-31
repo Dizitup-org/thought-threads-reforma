@@ -446,6 +446,7 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_admin_by_email: { Args: { user_email: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
