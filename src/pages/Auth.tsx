@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getAdminClient } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,12 +24,19 @@ export default function Auth() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        // Check if admin
-        const { data: admin } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('email', session.user.email)
-          .single();
+        // Check if admin using admin client to bypass RLS restrictions
+        const adminClient = getAdminClient();
+        const { data: admin } = adminClient
+          ? await adminClient
+              .from('admin_users')
+              .select('*')
+              .eq('email', session.user.email)
+              .single()
+          : await supabase
+              .from('admin_users')
+              .select('*')
+              .eq('email', session.user.email)
+              .single();
         
         if (admin) {
           navigate('/admin');
@@ -61,12 +68,19 @@ export default function Auth() {
         
         if (error) throw error;
         
-        // Check if admin user
-        const { data: admin } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('email', data.user?.email)
-          .single();
+        // Check if admin user using admin client to bypass RLS restrictions
+        const adminClient = getAdminClient();
+        const { data: admin } = adminClient
+          ? await adminClient
+              .from('admin_users')
+              .select('*')
+              .eq('email', data.user?.email)
+              .single()
+          : await supabase
+              .from('admin_users')
+              .select('*')
+              .eq('email', data.user?.email)
+              .single();
         
         if (isAdminLogin && !admin) {
           // Not an admin user
