@@ -434,13 +434,28 @@ const Admin = () => {
   };
 
   const deleteProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      return;
-    }
-
     try {
-      // Use admin client for full permissions
+      // First check if this product has orders
       const adminClient = getAdminClient();
+      const { data: ordersWithProduct, error: checkError } = adminClient
+        ? await adminClient.from("orders").select("id").eq("product_id", id).limit(1)
+        : await supabase.from("orders").select("id").eq("product_id", id).limit(1);
+
+      if (checkError) {
+        console.error('Error checking orders:', checkError);
+      }
+
+      // Customize confirmation message based on whether product has orders
+      const hasOrders = ordersWithProduct && ordersWithProduct.length > 0;
+      const confirmMessage = hasOrders
+        ? 'This product has existing orders. The product will be deleted but order history will be preserved. Continue?'
+        : 'Are you sure you want to delete this product? This action cannot be undone.';
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+
+      // Delete the product (orders will have product_id set to NULL due to foreign key constraint)
       const { error, data } = adminClient
         ? await adminClient.from('products').delete().eq('id', id).select()
         : await supabase.from('products').delete().eq('id', id).select();
@@ -454,7 +469,9 @@ const Admin = () => {
       
       toast({
         title: "Product deleted",
-        description: "Product has been removed and synced across all pages.",
+        description: hasOrders 
+          ? "Product removed successfully. Order history preserved."
+          : "Product has been removed and synced across all pages.",
       });
 
       // Refresh the product list to reflect the deletion
