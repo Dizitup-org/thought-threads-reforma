@@ -38,7 +38,7 @@ const Admin = () => {
     description: "",
     featured: false,
     tags: [] as string[],
-    discount_percentage: 0,
+    discount_percentage: null as number | null,
     images: [] as string[]
   });
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -388,7 +388,7 @@ const Admin = () => {
         description: productForm.description,
         featured: productForm.featured,
         tags: productForm.tags,
-        discount_percentage: productForm.discount_percentage,
+        discount_percentage: productForm.discount_percentage ?? 0,
         image_url: productForm.images[0] || null,
         image_file_path: productForm.images.join(',') // Store all images as comma-separated
       };
@@ -499,7 +499,7 @@ const Admin = () => {
       description: product.description || "",
       featured: product.featured || false,
       tags: product.tags || [],
-      discount_percentage: product.discount_percentage || 0,
+      discount_percentage: product.discount_percentage !== undefined && product.discount_percentage !== null ? product.discount_percentage : null,
       images: product.image_file_path ? product.image_file_path.split(',').filter((img: string) => img.trim()) : (product.image_url ? [product.image_url] : [])
     });
     setEditingProduct(product.id);
@@ -516,7 +516,7 @@ const Admin = () => {
       description: "",
       featured: false,
       tags: [],
-      discount_percentage: 0,
+      discount_percentage: null,
       images: []
     });
     setEditingProduct(null);
@@ -1093,8 +1093,8 @@ const Admin = () => {
                         type="number"
                         min="0"
                         max="100"
-                        value={productForm.discount_percentage}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, discount_percentage: parseInt(e.target.value) || 0 }))}
+                        value={productForm.discount_percentage ?? ""}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, discount_percentage: e.target.value ? parseInt(e.target.value) : null }))}
                         placeholder="0"
                         className="input-reforma"
                       />

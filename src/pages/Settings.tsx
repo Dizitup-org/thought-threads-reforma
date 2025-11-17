@@ -27,7 +27,7 @@ const Settings = () => {
     about_text: "Minimalist elegance for deep thinkers. Where sophisticated design meets conscious choices.",
     contact_email: "hello@reforma.com",
     contact_phone: "+1 (555) 123-4567",
-    whatsapp_number: "1234567890",
+    whatsapp_number: "6289702019",
     instagram_url: "https://instagram.com/reforma",
     facebook_url: "https://facebook.com/reforma"
   });

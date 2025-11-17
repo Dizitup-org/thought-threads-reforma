@@ -18,7 +18,7 @@ const Cart = () => {
   const [showPaymentQR, setShowPaymentQR] = useState(false);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [adminPhoneNumber, setAdminPhoneNumber] = useState("919831681756");
+  const [adminPhoneNumber, setAdminPhoneNumber] = useState("+916289702019");
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
