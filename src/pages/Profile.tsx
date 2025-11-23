@@ -223,10 +223,13 @@ export default function Profile() {
         throw uploadError;
       }
       
-      // Get public URL
+      // Get public URL with cache busting timestamp
+      const timestamp = new Date().getTime();
       const { data: { publicUrl } } = supabase.storage
         .from("avatars")
         .getPublicUrl(filePath);
+      
+      const publicUrlWithTimestamp = `${publicUrl}?t=${timestamp}`;
       
       // Update user profile
       const { error: updateError } = await supabase
@@ -236,8 +239,8 @@ export default function Profile() {
       
       if (updateError) throw updateError;
       
-      // Update local state
-      setUser({ ...user, avatar_url: publicUrl });
+      // Update local state with timestamped URL for immediate display
+      setUser({ ...user, avatar_url: publicUrlWithTimestamp });
       
       toast({
         title: "Success",

@@ -25,67 +25,94 @@ const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) =
   return (
     <div 
       className="fixed inset-0 bg-background flex items-center justify-center z-50"
-      style={{ backgroundColor: 'hsl(var(--background))' }}
+      style={{ 
+        backgroundColor: 'hsl(var(--cream-light))',
+        background: 'linear-gradient(135deg, hsl(var(--cream-light)) 0%, hsl(var(--background)) 100%)'
+      }}
     >
       <div className="text-center">
         <h1 
-          className="serif-heading text-5xl md:text-6xl font-bold text-foreground relative"
+          className="welcome-text text-6xl md:text-8xl font-bold text-foreground relative"
           style={{ 
-            color: 'hsl(var(--foreground))',
-            fontFamily: "'Playfair Display', Georgia, serif"
+            color: 'hsl(var(--primary))',
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontStyle: 'italic',
+            fontWeight: 600
           }}
         >
-          R<span className="relative inline-block">ē</span>Forma
+          R<span className="relative inline-block signature-e">ē</span>Forma
         </h1>
       </div>
       
       <style>{`
-        @keyframes fade-in-scale {
+        @keyframes cursive-write {
           0% {
             opacity: 0;
-            transform: scale(0.9);
           }
-          30% {
+          40% {
             opacity: 1;
-            transform: scale(1.05);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1);
           }
           70% {
             opacity: 1;
-            transform: scale(1);
           }
           100% {
             opacity: 0;
-            transform: scale(0.95);
           }
         }
         
-        h1 {
-          animation: fade-in-scale 1.8s forwards;
-        }
-        
-        h1 span.relative::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background-color: hsl(var(--foreground));
-          transform: scaleX(0);
-          transform-origin: left;
-          animation: slide-in 0.5s 0.6s forwards;
-        }
-        
-        @keyframes slide-in {
+        @keyframes letter-appear {
           0% {
-            transform: scaleX(0);
+            opacity: 0;
+            transform: translateY(10px);
           }
           100% {
-            transform: scaleX(1);
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .welcome-text {
+          animation: cursive-write 2s ease-in-out forwards;
+          letter-spacing: 0.05em;
+        }
+        
+        .welcome-text > * {
+          display: inline-block;
+          animation: letter-appear 0.3s ease-out forwards;
+        }
+        
+        .signature-e::after {
+          content: '';
+          position: absolute;
+          top: 35%;
+          left: -15%;
+          right: -15%;
+          height: 3px;
+          background: linear-gradient(90deg, 
+            transparent 0%, 
+            hsl(var(--primary)) 15%, 
+            hsl(var(--gold-accent)) 50%, 
+            hsl(var(--primary)) 85%, 
+            transparent 100%
+          );
+          transform: scaleX(0);
+          transform-origin: left;
+          animation: signature-bar 0.6s 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          box-shadow: 0 0 8px hsl(var(--gold-accent) / 0.4);
+        }
+        
+        @keyframes signature-bar {
+          0% {
+            transform: scaleX(0) translateY(0);
+            opacity: 0;
+          }
+          60% {
+            transform: scaleX(1.1) translateY(-2px);
+            opacity: 1;
+          }
+          100% {
+            transform: scaleX(1) translateY(0);
+            opacity: 1;
           }
         }
       `}</style>

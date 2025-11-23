@@ -11,77 +11,81 @@ Contrast: White #FFFFFF for clarity.
 
 @layer base {
   :root {
-    /* Core RēForma Palette - Enhanced */
-    --background: 35 18% 84%;     /* Warm Taupe #E5DCCD */
-    --foreground: 30 18% 28%;     /* Deeper Rich Brown for enhanced contrast */
+    /* Core RēForma Palette - Elevated Luxury */
+    --background: 40 35% 98%;     /* Cream White */
+    --foreground: 25 30% 15%;     /* Deep Espresso */
     
-    /* Card System - Elevated */
-    --card: 0 0% 100%;            /* Pure White #FFFFFF */
-    --card-foreground: 30 18% 28%;
+    /* Card System - Refined */
+    --card: 40 30% 99%;           /* Off-White */
+    --card-foreground: 25 30% 15%;
     
-    /* Popover - Refined */
-    --popover: 0 0% 100%;
-    --popover-foreground: 30 18% 28%;
+    /* Popover - Sophisticated */
+    --popover: 40 35% 98%;
+    --popover-foreground: 25 30% 15%;
     
     /* Brand Colors - RēForma Premium */
-    --primary: 30 18% 28%;        /* Deeper Rich Brown */
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 30 18% 24%;  /* Darker on hover */
+    --primary: 25 35% 28%;        /* Rich Espresso Brown */
+    --primary-foreground: 40 35% 98%;
+    --primary-hover: 25 40% 22%;  /* Deeper on hover */
     
-    --secondary: 35 18% 78%;      /* Lighter Taupe */
-    --secondary-foreground: 30 18% 28%;
-    --secondary-hover: 35 18% 74%;
+    --secondary: 40 55% 82%;      /* Champagne Gold */
+    --secondary-foreground: 25 30% 15%;
+    --secondary-hover: 40 60% 75%;
     
-    /* Sage Accent - Enhanced */
-    --accent: 90 15% 58%;         /* Richer Sage Green */
-    --accent-foreground: 0 0% 100%;
-    --accent-hover: 90 15% 54%;
-    --accent-light: 90 15% 90%;
+    /* Sage Accent - Sophisticated */
+    --accent: 155 20% 65%;        /* Elegant Sage */
+    --accent-foreground: 25 30% 15%;
+    --accent-hover: 155 22% 58%;
+    --accent-light: 155 18% 88%;
     
-    --muted: 35 12% 88%;
-    --muted-foreground: 30 15% 42%;
+    --muted: 40 20% 92%;
+    --muted-foreground: 25 20% 40%;
     
     /* Status Colors - Refined */
-    --destructive: 0 72% 56%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --destructive: 0 65% 48%;
+    --destructive-foreground: 40 35% 98%;
+    --success: 155 45% 42%;
+    --success-foreground: 40 35% 98%;
+    --warning: 42 85% 55%;
+    --warning-foreground: 25 30% 15%;
     
-    /* Borders & Inputs - Enhanced */
-    --border: 35 12% 78%;
-    --border-light: 35 12% 85%;
-    --input: 0 0% 100%;
-    --ring: 90 15% 58%;
+    /* Borders & Inputs - Clean */
+    --border: 35 20% 88%;
+    --border-light: 35 15% 92%;
+    --input: 35 20% 88%;
+    --ring: 25 35% 28%;
     
-    /* RēForma Effects - Premium */
-    --sage-accent: 90 15% 58%;
-    --warm-taupe: 35 18% 84%;
-    --cream-light: 35 25% 92%;
+    /* RēForma Effects - Luxurious */
+    --sage-accent: 155 20% 65%;
+    --warm-taupe: 35 25% 68%;
+    --cream-light: 40 40% 96%;
+    --gold-accent: 42 75% 65%;
+    --bronze-accent: 30 45% 50%;
     
-    /* Gradients - Sophisticated & Layered */
-    --gradient-elegant: linear-gradient(135deg, hsl(0 0% 100%), hsl(35 20% 92%));
-    --gradient-warm: linear-gradient(180deg, hsl(35 18% 86%), hsl(35 18% 82%));
-    --gradient-sage: linear-gradient(135deg, hsl(90 15% 58% / 0.12), hsl(90 15% 58% / 0.06));
-    --gradient-hero: linear-gradient(135deg, hsl(35 25% 95%), hsl(35 18% 88%), hsl(90 15% 92%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(35 20% 98%));
-    --gradient-shimmer: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.3), transparent);
+    /* Gradients - Sophisticated & Refined */
+    --gradient-elegant: linear-gradient(135deg, hsl(40 40% 96%), hsl(40 55% 82%), hsl(40 35% 98%));
+    --gradient-warm: linear-gradient(135deg, hsl(42 75% 65% / 0.15), hsl(30 45% 50% / 0.08));
+    --gradient-sage: linear-gradient(135deg, hsl(155 18% 88%), hsl(40 40% 96%));
+    --gradient-hero: radial-gradient(ellipse at center, hsl(40 40% 96% / 0.95), hsl(25 35% 28% / 0.12));
+    --gradient-card: linear-gradient(to bottom right, hsl(40 30% 99%), hsl(40 40% 96%));
+    --gradient-shimmer: linear-gradient(90deg, transparent, hsl(42 75% 65% / 0.4), transparent);
+    --gradient-gold: linear-gradient(135deg, hsl(42 75% 65%), hsl(30 45% 50%));
     
     /* Typography - Editorial Excellence */
     --font-heading: 'Playfair Display', 'Georgia', serif;
     --font-body: 'Inter', system-ui, -apple-system, sans-serif;
     
-    /* Shadows - Multi-layered Depth */
-    --shadow-elegant: 0 4px 24px hsl(30 18% 28% / 0.08), 0 2px 8px hsl(30 18% 28% / 0.04);
-    --shadow-soft: 0 2px 12px hsl(30 18% 28% / 0.06);
-    --shadow-crisp: 0 1px 4px hsl(30 18% 28% / 0.08);
-    --shadow-luxury: 0 8px 32px hsl(30 18% 28% / 0.12), 0 4px 16px hsl(30 18% 28% / 0.06);
-    --shadow-inner: inset 0 2px 4px hsl(30 18% 28% / 0.05);
+    /* Shadows - Luxurious Depth */
+    --shadow-elegant: 0 8px 32px hsl(25 35% 28% / 0.12), 0 4px 16px hsl(25 35% 28% / 0.06);
+    --shadow-soft: 0 4px 16px hsl(25 35% 28% / 0.06);
+    --shadow-crisp: 0 2px 8px hsl(25 35% 28% / 0.08);
+    --shadow-luxury: 0 12px 48px hsl(25 35% 28% / 0.15), 0 6px 24px hsl(25 35% 28% / 0.08);
+    --shadow-inner: inset 0 2px 8px hsl(25 35% 28% / 0.08);
+    --shadow-gold: 0 4px 20px hsl(42 75% 65% / 0.25);
     
-    /* Glow Effects */
-    --glow-sage: 0 0 24px hsl(90 15% 58% / 0.2);
-    --glow-primary: 0 0 24px hsl(30 18% 28% / 0.15);
+    /* Glow Effects - Premium */
+    --glow-sage: 0 0 32px hsl(155 20% 65% / 0.4);
+    --glow-primary: 0 0 40px hsl(42 75% 65% / 0.35);
     
     /* Animation Timings - Refined */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

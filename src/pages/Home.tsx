@@ -7,7 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import NewsletterForm from "@/components/NewsletterForm";
 import { supabase } from "@/integrations/supabase/client";
-import heroImage from "@/assets/hero elegant.jpg";
+import heroImage from "@/assets/hero-luxury-model.jpg";
 
 interface Product {
   id: string;
@@ -128,24 +128,27 @@ const Home = () => {
       {/* Sale Banner */}
       <SaleBanner />
       
-      {/* Hero Section */}
+      {/* Hero Section - Elevated Luxury */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden luxury-section hero-section">
         <motion.div 
           className="absolute inset-0 bg-cover bg-no-repeat"
           style={{
             backgroundImage: `url(${heroImage})`,
-            backgroundPosition: 'center top',
+            backgroundPosition: 'center right',
             backgroundSize: 'cover',
-            objectFit: 'cover',
-            transform: 'scale(1.1)',
-            transformOrigin: 'center center'
+            objectFit: 'cover'
           }}
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1.1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
+          initial={{ scale: 1.05, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 1.8, ease: "easeOut" }}
         >
-          {/* Enhanced semi-transparent overlay for better text visibility */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/40 to-background/60 hero-overlay" />
+          {/* Refined gradient overlay for sophisticated look */}
+          <div 
+            className="absolute inset-0 hero-overlay" 
+            style={{
+              background: 'linear-gradient(to right, hsl(var(--cream-light) / 0.85) 0%, hsl(var(--cream-light) / 0.6) 40%, transparent 70%)'
+            }}
+          />
         </motion.div>
         
         {/* Luxury Brand Animation */}
@@ -169,39 +172,57 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-          <motion.h1 
-            className="serif-heading text-5xl md:text-7xl lg:text-8xl font-bold mb-6 luxury-heading hero-text"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            R<span className="relative">ē</span>Forma
-          </motion.h1>
-          
-          <motion.p 
-            className="text-lg md:text-xl mb-10 max-w-2xl mx-auto luxury-subheading hero-text"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            Elevate your thoughts, embrace luxury stationery
-          </motion.p>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-          >
-            <Button 
-              asChild 
-              size="lg" 
-              className="bg-white text-reforma-brown hover:bg-white/90 px-8 py-6 text-lg font-medium luxury-button hero-button"
+        <div className="relative z-10 text-left px-4 sm:px-6 lg:px-16 max-w-7xl mx-auto">
+          <motion.div className="max-w-xl">
+            <motion.h1 
+              className="serif-heading text-6xl md:text-7xl lg:text-8xl font-bold mb-6 luxury-heading"
+              style={{ 
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontStyle: 'italic',
+                fontWeight: 600,
+                color: 'hsl(var(--primary))',
+                letterSpacing: '0.02em'
+              }}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1, delay: 0.3 }}
             >
-              <Link to="/shop">
-                Explore Collection <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+              R<span className="relative">ē</span>Forma
+            </motion.h1>
+            
+            <motion.p 
+              className="text-xl md:text-2xl mb-10 max-w-lg luxury-subheading"
+              style={{ 
+                color: 'hsl(var(--primary) / 0.85)',
+                fontWeight: 400,
+                lineHeight: 1.6
+              }}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1, delay: 0.5 }}
+            >
+              Where sophistication meets consciousness. Timeless fashion for the modern intellectual.
+            </motion.p>
+            
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1, delay: 0.7 }}
+            >
+              <Button 
+                asChild 
+                size="lg" 
+                className="bg-primary text-primary-foreground hover:bg-primary-hover px-10 py-7 text-lg font-medium luxury-button shadow-luxury hover:shadow-gold transition-all duration-300"
+                style={{
+                  borderRadius: '2px',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                <Link to="/shop">
+                  Explore Collection <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </motion.div>
           </motion.div>
         </div>
       </section>
