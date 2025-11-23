@@ -7,7 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import NewsletterForm from "@/components/NewsletterForm";
 import { supabase } from "@/integrations/supabase/client";
-import heroImage from "@/assets/hero-luxury-model.jpg";
+import heroImage from "@/assets/hero-reforma-tshirt.jpg";
 
 interface Product {
   id: string;
