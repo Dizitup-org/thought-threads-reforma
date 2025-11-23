@@ -68,6 +68,10 @@ export default {
           sage: "hsl(var(--accent))",
           cream: "hsl(var(--cream-light))",
         },
+        gold: {
+          DEFAULT: "hsl(var(--gold-accent))",
+          bronze: "hsl(var(--bronze-accent))",
+        },
       },
       fontFamily: {
         heading: "var(--font-heading)",
@@ -80,6 +84,7 @@ export default {
         'gradient-hero': 'var(--gradient-hero)',
         'gradient-card': 'var(--gradient-card)',
         'gradient-shimmer': 'var(--gradient-shimmer)',
+        'gradient-gold': 'var(--gradient-gold)',
       },
       boxShadow: {
         'elegant': 'var(--shadow-elegant)',
@@ -89,6 +94,7 @@ export default {
         'inner': 'var(--shadow-inner)',
         'glow-sage': 'var(--glow-sage)',
         'glow-primary': 'var(--glow-primary)',
+        'gold': 'var(--shadow-gold)',
       },
       borderRadius: {
         lg: "var(--radius-lg)",
