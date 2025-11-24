@@ -50,6 +50,8 @@ export default function Profile() {
   const [isUploading, setIsUploading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [newAddress, setNewAddress] = useState({
     address_line: "",
     city: "",
@@ -187,10 +189,21 @@ export default function Profile() {
     navigate("/");
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0] || !user) return;
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
     
     const file = e.target.files[0];
+    setSelectedAvatarFile(file);
+    
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!selectedAvatarFile || !user) return;
+    
+    const file = selectedAvatarFile;
     const fileExt = file.name.split(".").pop();
     
     // Get auth user ID for proper RLS
@@ -241,6 +254,10 @@ export default function Profile() {
       
       // Update local state with timestamped URL for immediate display
       setUser({ ...user, avatar_url: publicUrlWithTimestamp });
+      
+      // Clear preview and selected file
+      setSelectedAvatarFile(null);
+      setAvatarPreview(null);
       
       toast({
         title: "Success",
@@ -486,9 +503,18 @@ export default function Profile() {
                       transition={{ duration: 0.5 }}
                     >
                       <div className="relative">
-                        {user?.avatar_url ? (
+                        {avatarPreview ? (
+                          <motion.img
+                            src={avatarPreview}
+                            alt="Preview"
+                            className="w-24 h-24 rounded-full object-cover border-2 border-reforma-sage"
+                            initial={{ scale: 0.8 }}
+                            animate={{ scale: 1 }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        ) : user?.avatar_url ? (
                           <motion.img 
-                            src={user.avatar_url} 
+                            src={`${user.avatar_url}?t=${Date.now()}`} 
                             alt="Profile" 
                             className="w-24 h-24 rounded-full object-cover border-2 border-reforma-sage"
                             initial={{ scale: 0.8 }}
@@ -515,14 +541,43 @@ export default function Profile() {
                             type="file" 
                             className="hidden" 
                             accept="image/*" 
-                            onChange={handleAvatarUpload}
+                            onChange={handleAvatarFileSelect}
                             disabled={isUploading}
                           />
                         </motion.label>
                       </div>
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        {isUploading ? "Uploading..." : "Upload profile picture"}
-                      </p>
+                      {selectedAvatarFile ? (
+                        <div className="mt-2 space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            Selected: {selectedAvatarFile.name}
+                          </p>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm"
+                              onClick={handleAvatarUpload}
+                              disabled={isUploading}
+                              className="bg-reforma-brown hover:bg-reforma-brown/90"
+                            >
+                              {isUploading ? "Uploading..." : "Upload"}
+                            </Button>
+                            <Button 
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedAvatarFile(null);
+                                setAvatarPreview(null);
+                              }}
+                              disabled={isUploading}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Click the upload icon to select a picture
+                        </p>
+                      )}
                     </motion.div>
                     
                     <motion.div 
