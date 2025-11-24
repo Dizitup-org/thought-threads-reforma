@@ -42,11 +42,16 @@ const ProductCard = ({ product }: ProductCardProps) => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) return;
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("users")
         .select("id")
         .eq("auth_user_id", authUser.id)
-        .single();
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        return;
+      }
 
       if (!profile) return;
 
@@ -55,11 +60,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
         .select("id")
         .eq("user_id", profile.id)
         .eq("product_id", product.id)
-        .single();
+        .maybeSingle();
 
       setIsInWishlist(!!data);
     } catch (error) {
-      // Silently handle - user might not be logged in
+      console.error("Error checking wishlist status:", error);
     }
   };
 
@@ -80,16 +85,26 @@ const ProductCard = ({ product }: ProductCardProps) => {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("users")
         .select("id")
         .eq("auth_user_id", authUser.id)
-        .single();
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        toast({
+          title: "Error",
+          description: "Failed to fetch user profile. Please try logging out and back in.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (!profile) {
         toast({
-          title: "Error",
-          description: "User profile not found",
+          title: "Profile Setup Required",
+          description: "Please complete your profile setup first.",
           variant: "destructive",
         });
         return;
