@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { User, Package, MapPin, Settings, LogOut, Plus, Edit, Trash2, Upload, Eye, EyeOff } from "lucide-react";
+import { User, Package, MapPin, Settings, LogOut, Plus, Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -47,11 +47,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
-  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [newAddress, setNewAddress] = useState({
     address_line: "",
     city: "",
@@ -187,92 +184,6 @@ export default function Profile() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
-  };
-
-  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    
-    const file = e.target.files[0];
-    setSelectedAvatarFile(file);
-    
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setAvatarPreview(previewUrl);
-  };
-
-  const handleAvatarUpload = async () => {
-    if (!selectedAvatarFile || !user) return;
-    
-    const file = selectedAvatarFile;
-    const fileExt = file.name.split(".").pop();
-    
-    // Get auth user ID for proper RLS
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to upload a profile picture",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const fileName = `${authUser.id}.${fileExt}`;
-    const filePath = `${authUser.id}/${fileName}`;
-    
-    setIsUploading(true);
-    
-    try {
-      // Upload file with correct folder structure for RLS
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, { upsert: true });
-      
-      if (uploadError) {
-        // If it's a bucket not found error, provide a more helpful message
-        if (uploadError.message.includes("Bucket not found")) {
-          throw new Error("Storage bucket \"avatars\" not found. Please ensure the bucket exists in your Supabase Storage dashboard and is set as public.");
-        }
-        throw uploadError;
-      }
-      
-      // Get public URL with cache busting timestamp
-      const timestamp = new Date().getTime();
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-      
-      const publicUrlWithTimestamp = `${publicUrl}?t=${timestamp}`;
-      
-      // Update user profile
-      const { error: updateError } = await supabase
-        .from("users")
-        .update({ avatar_url: publicUrl })
-        .eq("id", user.id);
-      
-      if (updateError) throw updateError;
-      
-      // Update local state with timestamped URL for immediate display
-      setUser({ ...user, avatar_url: publicUrlWithTimestamp });
-      
-      // Clear preview and selected file
-      setSelectedAvatarFile(null);
-      setAvatarPreview(null);
-      
-      toast({
-        title: "Success",
-        description: "Profile picture updated successfully",
-      });
-    } catch (error: any) {
-      console.error("Avatar upload error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to upload avatar. Please check that the 'avatars' bucket exists and is public in your Supabase dashboard.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
   };
 
   const saveAddress = async () => {
@@ -503,16 +414,7 @@ export default function Profile() {
                       transition={{ duration: 0.5 }}
                     >
                       <div className="relative">
-                        {avatarPreview ? (
-                          <motion.img
-                            src={avatarPreview}
-                            alt="Preview"
-                            className="w-24 h-24 rounded-full object-cover border-2 border-reforma-sage"
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            transition={{ duration: 0.5 }}
-                          />
-                        ) : user?.avatar_url ? (
+                        {user?.avatar_url ? (
                           <motion.img 
                             src={`${user.avatar_url}?t=${Date.now()}`} 
                             alt="Profile" 
@@ -531,53 +433,7 @@ export default function Profile() {
                             <User className="w-12 h-12 text-reforma-brown" />
                           </motion.div>
                         )}
-                        <motion.label 
-                          className="absolute bottom-0 right-0 bg-reforma-brown text-white rounded-full p-2 cursor-pointer hover:bg-reforma-brown/90 transition-colors"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Upload className="w-4 h-4" />
-                          <input 
-                            type="file" 
-                            className="hidden" 
-                            accept="image/*" 
-                            onChange={handleAvatarFileSelect}
-                            disabled={isUploading}
-                          />
-                        </motion.label>
                       </div>
-                      {selectedAvatarFile ? (
-                        <div className="mt-2 space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            Selected: {selectedAvatarFile.name}
-                          </p>
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm"
-                              onClick={handleAvatarUpload}
-                              disabled={isUploading}
-                              className="bg-reforma-brown hover:bg-reforma-brown/90"
-                            >
-                              {isUploading ? "Uploading..." : "Upload"}
-                            </Button>
-                            <Button 
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedAvatarFile(null);
-                                setAvatarPreview(null);
-                              }}
-                              disabled={isUploading}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Click the upload icon to select a picture
-                        </p>
-                      )}
                     </motion.div>
                     
                     <motion.div 
