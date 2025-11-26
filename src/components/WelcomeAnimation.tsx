@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const animationRef = useRef<HTMLHeadingElement>(null);
 
   // Animation variants
   const containerVariants = {
@@ -40,6 +41,15 @@ const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
       transition: { duration: 0.5 }
     }
   };
+
+  useEffect(() => {
+    // Force reflow to ensure animation restarts
+    if (animationRef.current) {
+      animationRef.current.style.animation = 'none';
+      animationRef.current.offsetHeight; // Trigger reflow
+      animationRef.current.style.animation = '';
+    }
+  }, []);
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,10 +145,11 @@ const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
               </motion.div>
 
               <motion.h1
+                ref={animationRef}
                 variants={itemVariants}
                 className="serif-heading text-3xl font-bold text-reforma-brown mb-2"
               >
-                Welcome to R<span className="relative">ē</span>Forma
+                Welcome to R<span className="relative inline-block signature-e">ē</span>Forma
               </motion.h1>
 
               <motion.p
@@ -147,6 +158,43 @@ const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
               >
                 Luxury reimagined for the conscious individual
               </motion.p>
+
+              <style>{`
+                .signature-e::after {
+                  content: '';
+                  position: absolute;
+                  top: 35%;
+                  left: -15%;
+                  right: -15%;
+                  height: 2px;
+                  background: linear-gradient(90deg, 
+                    transparent 0%, 
+                    hsl(var(--primary)) 15%, 
+                    hsl(var(--gold-accent)) 50%, 
+                    hsl(var(--primary)) 85%, 
+                    transparent 100%
+                  );
+                  transform: scaleX(0);
+                  transform-origin: left;
+                  animation: signature-bar 0.5s 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                  box-shadow: 0 0 6px hsl(var(--gold-accent) / 0.4);
+                }
+                
+                @keyframes signature-bar {
+                  0% {
+                    transform: scaleX(0);
+                    opacity: 0;
+                  }
+                  70% {
+                    transform: scaleX(1.1);
+                    opacity: 1;
+                  }
+                  100% {
+                    transform: scaleX(1);
+                    opacity: 1;
+                  }
+                }
+              `}</style>
 
               <AnimatePresence mode="wait">
                 {step === 1 && (

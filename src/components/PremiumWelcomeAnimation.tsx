@@ -1,13 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface PremiumWelcomeAnimationProps {
   onComplete: () => void;
 }
 
 const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) => {
+  const animationRef = useRef<HTMLDivElement>(null);
+  
   useEffect(() => {
     // Disable scroll while animation is active
     document.body.style.overflow = 'hidden';
+    
+    // Force reflow to ensure animation restarts
+    if (animationRef.current) {
+      animationRef.current.style.animation = 'none';
+      animationRef.current.offsetHeight; // Trigger reflow
+      animationRef.current.style.animation = '';
+    }
     
     // Set a timeout to complete the animation
     const timer = setTimeout(() => {
@@ -32,6 +41,7 @@ const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) =
     >
       <div className="text-center">
         <h1 
+          ref={animationRef}
           className="welcome-text text-6xl md:text-8xl font-bold text-foreground relative"
           style={{ 
             color: 'hsl(var(--primary))',
@@ -45,40 +55,39 @@ const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) =
       </div>
       
       <style>{`
-        @keyframes cursive-write {
+        @keyframes cursive-fade-in {
           0% {
             opacity: 0;
-          }
-          40% {
-            opacity: 1;
+            transform: scale(0.8);
           }
           70% {
             opacity: 1;
-          }
-          100% {
-            opacity: 0;
-          }
-        }
-        
-        @keyframes letter-appear {
-          0% {
-            opacity: 0;
-            transform: translateY(10px);
+            transform: scale(1.1);
           }
           100% {
             opacity: 1;
-            transform: translateY(0);
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes signature-bar {
+          0% {
+            transform: scaleX(0);
+            opacity: 0;
+          }
+          70% {
+            transform: scaleX(1.1);
+            opacity: 1;
+          }
+          100% {
+            transform: scaleX(1);
+            opacity: 1;
           }
         }
         
         .welcome-text {
-          animation: cursive-write 2s ease-in-out forwards;
+          animation: cursive-fade-in 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
           letter-spacing: 0.05em;
-        }
-        
-        .welcome-text > * {
-          display: inline-block;
-          animation: letter-appear 0.3s ease-out forwards;
         }
         
         .signature-e::after {
@@ -97,23 +106,8 @@ const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) =
           );
           transform: scaleX(0);
           transform-origin: left;
-          animation: signature-bar 0.6s 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          animation: signature-bar 0.5s 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
           box-shadow: 0 0 8px hsl(var(--gold-accent) / 0.4);
-        }
-        
-        @keyframes signature-bar {
-          0% {
-            transform: scaleX(0) translateY(0);
-            opacity: 0;
-          }
-          60% {
-            transform: scaleX(1.1) translateY(-2px);
-            opacity: 1;
-          }
-          100% {
-            transform: scaleX(1) translateY(0);
-            opacity: 1;
-          }
         }
       `}</style>
     </div>
