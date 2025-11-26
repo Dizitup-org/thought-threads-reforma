@@ -24,26 +24,11 @@ interface Address extends Tables<"addresses"> {}
 interface Order extends Tables<"orders"> {
   addresses?: Pick<Tables<"addresses">, "id" | "address_line" | "city" | "state" | "pincode" | "country" | "is_default"> | null;
 }
-interface WishlistItem {
-  id: string;
-  product_id: string;
-  created_at: string;
-  products: {
-    id: string;
-    name: string;
-    price: number;
-    image_url: string | null;
-    collection: string;
-    discounted_price: number | null;
-    is_on_sale: boolean | null;
-  };
-}
 
 export default function Profile() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
@@ -146,28 +131,6 @@ export default function Profile() {
           .order("created_at", { ascending: false });
         
         setOrders(ordersData || []);
-
-        // Fetch wishlist
-        const { data: wishlistData } = await supabase
-          .from("wishlist")
-          .select(`
-            id,
-            product_id,
-            created_at,
-            products (
-              id,
-              name,
-              price,
-              image_url,
-              collection,
-              discounted_price,
-              is_on_sale
-            )
-          `)
-          .eq("user_id", profile.id)
-          .order("created_at", { ascending: false });
-        
-        setWishlist(wishlistData || []);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -384,10 +347,6 @@ export default function Profile() {
               <TabsTrigger value="orders" className="flex items-center gap-2">
                 <Package className="w-4 h-4" />
                 Orders
-              </TabsTrigger>
-              <TabsTrigger value="wishlist" className="flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                Wishlist
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
@@ -650,101 +609,6 @@ export default function Profile() {
                             <Button variant="outline" size="sm">
                               Track Order
                             </Button>
-                          </motion.div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
-
-            <TabsContent value="wishlist">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Wishlist</CardTitle>
-                    <CardDescription>Your favorite items</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {wishlist.length === 0 ? (
-                      <div className="text-center py-12">
-                        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium mb-2">Your wishlist is empty</h3>
-                        <p className="text-muted-foreground mb-4">
-                          Save items that you like to your wishlist
-                        </p>
-                        <Button asChild>
-                          <a href="/shop">Browse Products</a>
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {wishlist.map((item, index) => (
-                          <motion.div
-                            key={item.id}
-                            className="border rounded-lg overflow-hidden"
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.3, delay: index * 0.1 }}
-                          >
-                            <a href={`/product/${item.product_id}`}>
-                              {item.products.image_url && (
-                                <img
-                                  src={item.products.image_url}
-                                  alt={item.products.name}
-                                  className="w-full h-48 object-cover"
-                                />
-                              )}
-                              <div className="p-4">
-                                <h3 className="font-semibold mb-1">{item.products.name}</h3>
-                                <p className="text-sm text-muted-foreground mb-2">{item.products.collection}</p>
-                                <div className="flex items-center justify-between">
-                                  {item.products.is_on_sale ? (
-                                    <div>
-                                      <p className="text-sm line-through text-muted-foreground">₹{item.products.price}</p>
-                                      <p className="font-bold text-destructive">₹{item.products.discounted_price}</p>
-                                    </div>
-                                  ) : (
-                                    <p className="font-bold">₹{item.products.price}</p>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={async (e) => {
-                                      e.preventDefault();
-                                      try {
-                                        const { error } = await supabase
-                                          .from("wishlist")
-                                          .delete()
-                                          .eq("id", item.id);
-                                        
-                                        if (error) throw error;
-                                        
-                                        toast({
-                                          title: "Removed from wishlist",
-                                          description: `${item.products.name} has been removed from your wishlist`,
-                                        });
-                                        
-                                        fetchUserData();
-                                      } catch (error: any) {
-                                        toast({
-                                          title: "Error",
-                                          description: error.message,
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </a>
                           </motion.div>
                         ))}
                       </div>

@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Heart } from "lucide-react";
+import { Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface Product {
@@ -29,127 +28,7 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const [isInWishlist, setIsInWishlist] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    checkWishlistStatus();
-  }, [product.id]);
-
-  const checkWishlistStatus = async () => {
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return;
-
-      const { data: profile, error: profileError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("auth_user_id", authUser.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        return;
-      }
-
-      if (!profile) return;
-
-      const { data } = await supabase
-        .from("wishlist")
-        .select("id")
-        .eq("user_id", profile.id)
-        .eq("product_id", product.id)
-        .maybeSingle();
-
-      setIsInWishlist(!!data);
-    } catch (error) {
-      console.error("Error checking wishlist status:", error);
-    }
-  };
-
-  const handleWishlistToggle = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    setIsLoading(true);
-    
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        toast({
-          title: "Login required",
-          description: "Please login to add items to your wishlist",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("auth_user_id", authUser.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Profile fetch error:", profileError);
-        toast({
-          title: "Error",
-          description: "Failed to fetch user profile. Please try logging out and back in.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!profile) {
-        toast({
-          title: "Profile Setup Required",
-          description: "Please complete your profile setup first.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (isInWishlist) {
-        const { error } = await supabase
-          .from("wishlist")
-          .delete()
-          .eq("user_id", profile.id)
-          .eq("product_id", product.id);
-
-        if (error) throw error;
-
-        toast({
-          title: "Removed from wishlist",
-          description: `${product.name} has been removed from your wishlist`,
-        });
-        setIsInWishlist(false);
-      } else {
-        const { error } = await supabase
-          .from("wishlist")
-          .insert({
-            user_id: profile.id,
-            product_id: product.id,
-          });
-
-        if (error) throw error;
-
-        toast({
-          title: "Added to wishlist",
-          description: `${product.name} has been added to your wishlist`,
-        });
-        setIsInWishlist(true);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update wishlist",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <motion.div
@@ -162,19 +41,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
       <Link to={`/product/${product.id}`} className="block h-full">
         <Card className="h-full overflow-hidden border-0 shadow-lg">
           <CardContent className="p-0 relative">
-            {/* Wishlist Button */}
-            <Button
-              size="icon"
-              variant="ghost"
-              className="absolute top-3 right-3 z-20 bg-white/90 hover:bg-white backdrop-blur-sm"
-              onClick={handleWishlistToggle}
-              disabled={isLoading}
-            >
-              <Heart 
-                className={`h-5 w-5 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-reforma-brown'}`}
-              />
-            </Button>
-
             {/* Luxury Badge for Featured Products */}
             {product.featured && (
               <div className="absolute top-3 left-3 z-10">
