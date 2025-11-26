@@ -9,6 +9,7 @@ import { Minus, Plus, Trash2, ArrowLeft, QrCode, Timer, User, Mail, Phone } from
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from '@/hooks/use-toast';
 import AddressSelector from '@/components/AddressSelector';
+import paymentQrCode from '@/assets/payment-qr-code.png';
 
 const Cart = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
@@ -420,7 +421,7 @@ Thank you!`;
                   {/* QR Code Image */}
                   <div className="bg-white p-2 rounded">
                     <img 
-                      src="https://i.ibb.co/tTRQTt4C/qr-code-placeholder.png" 
+                      src={paymentQrCode}
                       alt="Payment QR Code" 
                       className="w-48 h-48 object-contain"
                     />
