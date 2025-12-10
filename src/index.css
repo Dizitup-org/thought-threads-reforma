@@ -1178,6 +1178,26 @@ Contrast: White #FFFFFF for clarity.
     opacity: 1;
     transform: translateY(0);
   }
+  
+  /* Custom animation for RēForma macron (bar over e) */
+  @keyframes macron-reveal {
+    0% {
+      transform: translate(-50%, -100%) scaleX(0);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(-50%, -100%) scaleX(0.5);
+      opacity: 0.7;
+    }
+    100% {
+      transform: translate(-50%, -100%) scaleX(1);
+      opacity: 1;
+    }
+  }
+  
+  .animate-macron {
+    animation: macron-reveal 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  }
 }
 
 /* Custom styles for hero section */

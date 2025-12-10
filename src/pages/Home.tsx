@@ -172,7 +172,29 @@ const Home = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.3 }}
             >
-              R<span className="relative">ē</span>Forma
+              R<motion.span 
+                className="relative inline-block"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 1.1 }}
+              >
+                ē
+                {/* Animated macron (bar) over the e */}
+                <motion.span
+                  className="absolute top-1/2 left-1/2 w-3/5 h-0.5 bg-current origin-center animate-macron"
+                  style={{ 
+                    transform: 'translate(-50%, -100%) scaleX(0)',
+                    transformOrigin: 'center'
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ 
+                    duration: 0.8, 
+                    delay: 1.6,
+                    ease: "easeInOut"
+                  }}
+                />
+              </motion.span>Forma
             </motion.h1>
             
             <motion.p 
