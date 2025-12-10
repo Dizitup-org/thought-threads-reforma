@@ -6,9 +6,9 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import NewsletterForm from "@/components/NewsletterForm";
+import VideoBackground from "@/components/VideoBackground";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-reforma-tshirt.jpg";
-
 interface Product {
   id: string;
   name: string;
@@ -130,47 +130,32 @@ const Home = () => {
       
       {/* Hero Section - Elevated Luxury */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden luxury-section hero-section">
-        <motion.div 
-          className="absolute inset-0 bg-cover bg-no-repeat"
-          style={{
-            backgroundImage: `url(${heroImage})`,
-            backgroundPosition: 'center right',
-            backgroundSize: 'cover',
-            objectFit: 'cover'
-          }}
-          initial={{ scale: 1.05, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.8, ease: "easeOut" }}
+        <VideoBackground 
+          videoSrc="/videos/Replace_Characters_in_Video_Background.mp4"
+          imageSrc={heroImage}
+          overlayOpacity={0.6}
         >
-          {/* Refined gradient overlay for sophisticated look */}
-          <div 
-            className="absolute inset-0 hero-overlay" 
-            style={{
-              background: 'linear-gradient(to right, hsl(var(--cream-light) / 0.85) 0%, hsl(var(--cream-light) / 0.6) 40%, transparent 70%)'
-            }}
-          />
-        </motion.div>
-        
-        {/* Luxury Brand Animation */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="luxury-animation-container opacity-20">
-            <motion.div 
-              className="luxury-circle luxury-circle-1"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            ></motion.div>
-            <motion.div 
-              className="luxury-circle luxury-circle-2"
-              animate={{ rotate: -360 }}
-              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-            ></motion.div>
-            <motion.div 
-              className="luxury-circle luxury-circle-3"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            ></motion.div>
+          {/* Luxury Brand Animation */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="luxury-animation-container opacity-20">
+              <motion.div 
+                className="luxury-circle luxury-circle-1"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              ></motion.div>
+              <motion.div 
+                className="luxury-circle luxury-circle-2"
+                animate={{ rotate: -360 }}
+                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+              ></motion.div>
+              <motion.div 
+                className="luxury-circle luxury-circle-3"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              ></motion.div>
+            </div>
           </div>
-        </div>
+        </VideoBackground>
 
         <div className="relative z-10 text-left px-4 sm:px-6 lg:px-16 max-w-7xl mx-auto">
           <motion.div className="max-w-xl">
@@ -226,7 +211,6 @@ const Home = () => {
           </motion.div>
         </div>
       </section>
-
       {/* Featured Collections */}
       <motion.section 
         className="py-16 sm:py-20 md:py-24 luxury-section-divider scroll-fade-in"
