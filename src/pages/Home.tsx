@@ -160,41 +160,44 @@ const Home = () => {
         <div className="relative z-10 text-left px-4 sm:px-6 lg:px-16 max-w-7xl mx-auto">
           <motion.div className="max-w-xl">
             <motion.h1 
-              className="serif-heading text-6xl md:text-7xl lg:text-8xl font-bold mb-6 luxury-heading"
+              className="text-6xl md:text-7xl lg:text-8xl mb-6"
               style={{ 
-                fontFamily: "'Playfair Display', Georgia, serif",
-                fontStyle: 'italic',
-                fontWeight: 600,
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontWeight: 300,
                 color: 'hsl(var(--primary))',
-                letterSpacing: '0.02em'
+                letterSpacing: '0.08em',
+                lineHeight: 1,
               }}
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.3 }}
             >
-              R<motion.span 
+              r<motion.span 
                 className="relative inline-block"
-                initial={{ opacity: 0 }}
+                initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 1.1 }}
               >
-                ē
-                {/* Animated macron (bar) over the e */}
+                e
+                {/* Macron bar over the e - matching welcome animation */}
                 <motion.span
-                  className="absolute top-1/2 left-1/2 w-3/5 h-0.5 bg-current origin-center animate-macron"
+                  className="absolute left-1/2"
                   style={{ 
-                    transform: 'translate(-50%, -100%) scaleX(0)',
+                    top: '0.02em',
+                    transform: 'translateX(-50%)',
+                    width: '65%',
+                    height: '1.5px',
+                    background: 'hsl(var(--primary))',
                     transformOrigin: 'center'
                   }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  initial={{ scaleX: 0, opacity: 0 }}
+                  animate={{ scaleX: 1, opacity: 1 }}
                   transition={{ 
-                    duration: 0.8, 
-                    delay: 1.6,
-                    ease: "easeInOut"
+                    duration: 0.5,
+                    delay: 1.2,
+                    ease: [0.4, 0, 0.2, 1]
                   }}
                 />
-              </motion.span>Forma
+              </motion.span>forma
             </motion.h1>
             
             <motion.p 

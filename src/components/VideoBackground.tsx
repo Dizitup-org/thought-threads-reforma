@@ -19,10 +19,13 @@ const VideoBackground = ({
 }: VideoBackgroundProps) => {
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {/* Video Background */}
+      {/* Video Background with Premium Visual Treatment */}
       {videoSrc && (
         <motion.video
           className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            filter: 'saturate(0.85) contrast(1.05) brightness(0.95)',
+          }}
           autoPlay
           loop
           muted
@@ -44,7 +47,8 @@ const VideoBackground = ({
             backgroundImage: `url(${gifSrc})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
+            backgroundRepeat: 'no-repeat',
+            filter: 'saturate(0.85) contrast(1.05) brightness(0.95)',
           }}
           initial={{ scale: 1.05, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -60,7 +64,8 @@ const VideoBackground = ({
             backgroundImage: `url(${imageSrc})`,
             backgroundPosition: 'center right',
             backgroundSize: 'cover',
-            objectFit: 'cover'
+            objectFit: 'cover',
+            filter: 'saturate(0.85) contrast(1.05) brightness(0.95)',
           }}
           initial={{ scale: 1.05, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -68,11 +73,28 @@ const VideoBackground = ({
         />
       )}
       
-      {/* Overlay for text readability */}
+      {/* Premium Warm Tint Overlay */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'linear-gradient(180deg, hsl(40 50% 95% / 0.12) 0%, hsl(25 35% 28% / 0.08) 100%)',
+          mixBlendMode: 'overlay',
+        }}
+      />
+      
+      {/* Subtle Vignette Effect */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 40%, hsl(25 30% 15% / 0.25) 100%)',
+        }}
+      />
+      
+      {/* Gradient Overlay for text readability */}
       <div 
         className="absolute inset-0"
         style={{
-          background: `linear-gradient(to right, hsl(${overlayColor} / ${overlayOpacity + 0.2}) 0%, hsl(${overlayColor} / ${overlayOpacity}) 40%, transparent 70%)`
+          background: `linear-gradient(to right, hsl(${overlayColor} / ${overlayOpacity + 0.25}) 0%, hsl(${overlayColor} / ${overlayOpacity + 0.1}) 35%, hsl(${overlayColor} / ${overlayOpacity * 0.3}) 60%, transparent 80%)`
         }}
       />
       

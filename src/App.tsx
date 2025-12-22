@@ -104,7 +104,7 @@ const App = () => {
                     <WelcomeAnimation onComplete={handleWelcomeComplete} />
                   )
                 )}
-                <Header />
+                {!showWelcome && <Header />}
                 <AnimatedRoutes />
               </div>
             </BrowserRouter>
