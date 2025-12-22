@@ -1,116 +1,111 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PremiumWelcomeAnimationProps {
   onComplete: () => void;
 }
 
 const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) => {
-  const animationRef = useRef<HTMLDivElement>(null);
+  const [stage, setStage] = useState<'text' | 'bar' | 'complete'>('text');
   
   useEffect(() => {
-    // Disable scroll while animation is active
     document.body.style.overflow = 'hidden';
     
-    // Force reflow to ensure animation restarts
-    if (animationRef.current) {
-      animationRef.current.style.animation = 'none';
-      animationRef.current.offsetHeight; // Trigger reflow
-      animationRef.current.style.animation = '';
-    }
+    // Stage 1: Text appears (0-1.2s)
+    // Stage 2: Bar animates in (1.2s-2s)
+    // Stage 3: Hold and fade out (2s-2.8s)
     
-    // Set a timeout to complete the animation
-    const timer = setTimeout(() => {
+    const barTimer = setTimeout(() => setStage('bar'), 1200);
+    const completeTimer = setTimeout(() => {
+      setStage('complete');
       document.body.style.overflow = 'auto';
       onComplete();
-    }, 2000); // 2 seconds as requested
+    }, 2800);
     
-    // Cleanup function
     return () => {
       document.body.style.overflow = 'auto';
-      clearTimeout(timer);
+      clearTimeout(barTimer);
+      clearTimeout(completeTimer);
     };
   }, [onComplete]);
 
   return (
-    <div 
-      className="fixed inset-0 bg-background flex items-center justify-center z-50"
-      style={{ 
-        backgroundColor: 'hsl(var(--cream-light))',
-        background: 'linear-gradient(135deg, hsl(var(--cream-light)) 0%, hsl(var(--background)) 100%)'
-      }}
-    >
-      <div className="text-center">
-        <h1 
-          ref={animationRef}
-          className="welcome-text text-6xl md:text-8xl font-bold text-foreground relative"
+    <AnimatePresence>
+      {stage !== 'complete' && (
+        <motion.div 
+          className="fixed inset-0 flex items-center justify-center z-50"
           style={{ 
-            color: 'hsl(var(--primary))',
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontStyle: 'italic',
-            fontWeight: 600
+            background: 'linear-gradient(180deg, hsl(var(--cream-light)) 0%, hsl(var(--background)) 100%)'
           }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
         >
-          R<span className="relative inline-block signature-e">ē</span>Forma
-        </h1>
-      </div>
-      
-      <style>{`
-        @keyframes cursive-fade-in {
-          0% {
-            opacity: 0;
-            transform: scale(0.8);
-          }
-          70% {
-            opacity: 1;
-            transform: scale(1.1);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        @keyframes signature-bar {
-          0% {
-            transform: scaleX(0);
-            opacity: 0;
-          }
-          70% {
-            transform: scaleX(1.1);
-            opacity: 1;
-          }
-          100% {
-            transform: scaleX(1);
-            opacity: 1;
-          }
-        }
-        
-        .welcome-text {
-          animation: cursive-fade-in 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-          letter-spacing: 0.05em;
-        }
-        
-        .signature-e::after {
-          content: '';
-          position: absolute;
-          top: 35%;
-          left: -15%;
-          right: -15%;
-          height: 3px;
-          background: linear-gradient(90deg, 
-            transparent 0%, 
-            hsl(var(--primary)) 15%, 
-            hsl(var(--gold-accent)) 50%, 
-            hsl(var(--primary)) 85%, 
-            transparent 100%
-          );
-          transform: scaleX(0);
-          transform-origin: left;
-          animation: signature-bar 0.5s 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-          box-shadow: 0 0 8px hsl(var(--gold-accent) / 0.4);
-        }
-      `}</style>
-    </div>
+          <div className="text-center">
+            <h1 
+              className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl tracking-wide"
+              style={{ 
+                color: 'hsl(var(--primary))',
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontWeight: 400,
+                letterSpacing: '0.02em'
+              }}
+            >
+              {/* Letter-by-letter reveal */}
+              {'reforma'.split('').map((letter, index) => (
+                <motion.span
+                  key={index}
+                  className={`inline-block ${letter === 'e' ? 'relative' : ''}`}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.6,
+                    delay: index * 0.08,
+                    ease: [0.25, 0.1, 0.25, 1]
+                  }}
+                >
+                  {letter}
+                  
+                  {/* Macron bar above 'e' */}
+                  {letter === 'e' && (
+                    <motion.span
+                      className="absolute left-1/2 -translate-x-1/2"
+                      style={{
+                        top: '-0.05em',
+                        width: '70%',
+                        height: '2px',
+                        background: 'linear-gradient(90deg, transparent 0%, hsl(var(--primary)) 20%, hsl(var(--primary)) 80%, transparent 100%)',
+                      }}
+                      initial={{ scaleX: 0, opacity: 0 }}
+                      animate={stage === 'bar' ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
+                      transition={{ 
+                        duration: 0.6,
+                        ease: [0.4, 0, 0.2, 1],
+                        delay: 0.1
+                      }}
+                    />
+                  )}
+                </motion.span>
+              ))}
+            </h1>
+            
+            {/* Subtle tagline */}
+            <motion.p
+              className="mt-6 text-sm md:text-base tracking-[0.3em] uppercase"
+              style={{ 
+                color: 'hsl(var(--muted-foreground))',
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 300
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: stage === 'bar' ? 0.7 : 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+            >
+              Redefine Your Style
+            </motion.p>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
