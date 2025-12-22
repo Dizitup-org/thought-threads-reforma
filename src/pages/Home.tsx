@@ -180,12 +180,13 @@ const Home = () => {
                 e
                 {/* Macron bar over the e - matching welcome animation */}
                 <motion.span
-                  className="absolute left-1/2"
+                  className="absolute"
                   style={{ 
-                    top: '0.02em',
+                    top: '-0.08em',
+                    left: '50%',
                     transform: 'translateX(-50%)',
-                    width: '65%',
-                    height: '1.5px',
+                    width: '80%',
+                    height: '2px',
                     background: 'hsl(var(--primary))',
                     transformOrigin: 'center'
                   }}
