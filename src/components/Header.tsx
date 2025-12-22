@@ -129,11 +129,13 @@ const Header = () => {
                     e
                     {/* Macron bar */}
                     <span 
-                      className="absolute left-1/2 -translate-x-1/2"
+                      className="absolute"
                       style={{
-                        top: '0.02em',
-                        width: '65%',
-                        height: '1px',
+                        top: '-0.05em',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '80%',
+                        height: '1.5px',
                         background: 'hsl(var(--primary))',
                       }}
                     />

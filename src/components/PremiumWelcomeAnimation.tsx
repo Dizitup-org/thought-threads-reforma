@@ -79,12 +79,13 @@ const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) =
                   {/* Macron bar above 'e' - the brand mark */}
                   {letter === 'e' && (
                     <motion.span
-                      className="absolute left-1/2"
+                      className="absolute"
                       style={{
-                        top: '0.02em',
+                        top: '-0.08em',
+                        left: '50%',
                         transform: 'translateX(-50%)',
-                        width: '65%',
-                        height: '1.5px',
+                        width: '80%',
+                        height: '2px',
                         background: 'hsl(25 35% 25%)',
                         transformOrigin: 'center',
                       }}
