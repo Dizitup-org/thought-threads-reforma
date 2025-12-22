@@ -114,8 +114,32 @@ const Header = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Link to="/" className="serif-heading text-2xl font-bold text-reforma-brown flex items-center">
-                <span className="mr-2">R<span className="relative">ē</span>Forma</span>
+              <Link 
+                to="/" 
+                className="text-2xl text-reforma-brown flex items-center"
+                style={{
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontWeight: 400,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                <span className="relative">
+                  R
+                  <span className="relative inline-block">
+                    e
+                    {/* Macron bar */}
+                    <span 
+                      className="absolute left-1/2 -translate-x-1/2"
+                      style={{
+                        top: '0.02em',
+                        width: '65%',
+                        height: '1px',
+                        background: 'hsl(var(--primary))',
+                      }}
+                    />
+                  </span>
+                  forma
+                </span>
               </Link>
             </motion.div>
 

@@ -29,7 +29,7 @@ const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) =
     };
   }, [onComplete]);
 
-  const letters = 'reforma'.split('');
+  const letters = 'Reforma'.split('');
 
   return (
     <AnimatePresence>
