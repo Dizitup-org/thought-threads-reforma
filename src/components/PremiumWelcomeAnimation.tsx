@@ -11,16 +11,16 @@ const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) =
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     
-    // Stage 1: Text appears (0-1.2s)
-    // Stage 2: Bar animates in (1.2s-2s)
-    // Stage 3: Hold and fade out (2s-2.8s)
+    // Stage 1: Text appears (0-1.4s)
+    // Stage 2: Bar animates in (1.4s-2.2s)
+    // Stage 3: Hold and fade out (2.2s-3s)
     
-    const barTimer = setTimeout(() => setStage('bar'), 1200);
+    const barTimer = setTimeout(() => setStage('bar'), 1400);
     const completeTimer = setTimeout(() => {
       setStage('complete');
       document.body.style.overflow = 'auto';
       onComplete();
-    }, 2800);
+    }, 3000);
     
     return () => {
       document.body.style.overflow = 'auto';
@@ -29,58 +29,74 @@ const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) =
     };
   }, [onComplete]);
 
+  const letters = 'reforma'.split('');
+
   return (
     <AnimatePresence>
       {stage !== 'complete' && (
         <motion.div 
           className="fixed inset-0 flex items-center justify-center z-50"
           style={{ 
-            background: 'linear-gradient(180deg, hsl(var(--cream-light)) 0%, hsl(var(--background)) 100%)'
+            background: 'linear-gradient(180deg, hsl(40 40% 97%) 0%, hsl(40 35% 94%) 100%)'
           }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
         >
-          <div className="text-center">
+          <div className="text-center px-4">
+            {/* Main Brand Typography */}
             <h1 
-              className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl tracking-wide"
+              className="relative"
               style={{ 
-                color: 'hsl(var(--primary))',
-                fontFamily: "'Playfair Display', Georgia, serif",
-                fontWeight: 400,
-                letterSpacing: '0.02em'
+                fontFamily: "'Cormorant Garamond', 'Georgia', serif",
+                fontWeight: 300,
+                fontSize: 'clamp(3rem, 12vw, 8rem)',
+                letterSpacing: '0.08em',
+                color: 'hsl(25 35% 25%)',
+                lineHeight: 1,
               }}
             >
-              {/* Letter-by-letter reveal */}
-              {'reforma'.split('').map((letter, index) => (
+              {letters.map((letter, index) => (
                 <motion.span
                   key={index}
                   className={`inline-block ${letter === 'e' ? 'relative' : ''}`}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0, 
+                    filter: 'blur(0px)'
+                  }}
                   transition={{ 
-                    duration: 0.6,
-                    delay: index * 0.08,
+                    duration: 0.8,
+                    delay: 0.15 + index * 0.09,
                     ease: [0.25, 0.1, 0.25, 1]
+                  }}
+                  style={{
+                    display: 'inline-block',
                   }}
                 >
                   {letter}
                   
-                  {/* Macron bar above 'e' */}
+                  {/* Macron bar above 'e' - the brand mark */}
                   {letter === 'e' && (
                     <motion.span
-                      className="absolute left-1/2 -translate-x-1/2"
+                      className="absolute left-1/2"
                       style={{
-                        top: '-0.05em',
-                        width: '70%',
-                        height: '2px',
-                        background: 'linear-gradient(90deg, transparent 0%, hsl(var(--primary)) 20%, hsl(var(--primary)) 80%, transparent 100%)',
+                        top: '0.02em',
+                        transform: 'translateX(-50%)',
+                        width: '65%',
+                        height: '1.5px',
+                        background: 'hsl(25 35% 25%)',
+                        transformOrigin: 'center',
                       }}
                       initial={{ scaleX: 0, opacity: 0 }}
-                      animate={stage === 'bar' ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
+                      animate={stage === 'bar' ? { 
+                        scaleX: 1, 
+                        opacity: 1,
+                      } : { scaleX: 0, opacity: 0 }}
                       transition={{ 
-                        duration: 0.6,
+                        duration: 0.5,
                         ease: [0.4, 0, 0.2, 1],
-                        delay: 0.1
+                        delay: 0
                       }}
                     />
                   )}
@@ -88,19 +104,29 @@ const PremiumWelcomeAnimation = ({ onComplete }: PremiumWelcomeAnimationProps) =
               ))}
             </h1>
             
-            {/* Subtle tagline */}
+            {/* Subtle brand tagline */}
             <motion.p
-              className="mt-6 text-sm md:text-base tracking-[0.3em] uppercase"
               style={{ 
-                color: 'hsl(var(--muted-foreground))',
-                fontFamily: "'Montserrat', sans-serif",
-                fontWeight: 300
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontWeight: 300,
+                fontSize: 'clamp(0.65rem, 1.8vw, 0.85rem)',
+                letterSpacing: '0.35em',
+                textTransform: 'uppercase',
+                color: 'hsl(25 20% 45%)',
+                marginTop: 'clamp(1.5rem, 4vw, 2.5rem)',
               }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: stage === 'bar' ? 0.7 : 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ 
+                opacity: stage === 'bar' ? 0.8 : 0,
+                y: stage === 'bar' ? 0 : 10
+              }}
+              transition={{ 
+                duration: 0.6, 
+                delay: 0.2,
+                ease: [0.4, 0, 0.2, 1]
+              }}
             >
-              Redefine Your Style
+              Fashion. Reimagined.
             </motion.p>
           </div>
         </motion.div>
