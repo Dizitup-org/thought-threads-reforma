@@ -172,7 +172,7 @@ const Home = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.3 }}
             >
-              r<motion.span 
+              R<motion.span 
                 className="relative inline-block"
                 initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
