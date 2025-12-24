@@ -7,6 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import NewsletterForm from "@/components/NewsletterForm";
 import VideoBackground from "@/components/VideoBackground";
+import CustomerReviews from "@/components/CustomerReviews";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-reforma-tshirt.jpg";
 interface Product {
@@ -344,6 +345,9 @@ const Home = () => {
           </motion.div>
         </div>
       </motion.section>
+
+      {/* Customer Reviews Section */}
+      <CustomerReviews />
 
       {/* Threads of Thought Story */}
       <motion.section 
