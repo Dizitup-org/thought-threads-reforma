@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star } from "lucide-react";
+import { Heart, ShoppingCart, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/hooks/useCart";
 
 interface Product {
   id: string;
@@ -25,10 +25,54 @@ interface Product {
 
 interface ProductCardProps {
   product: Product;
+  showQuickActions?: boolean;
+  isWishlisted?: boolean;
+  onToggleWishlist?: (productId: string) => Promise<void> | void;
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product, showQuickActions = false, isWishlisted = false, onToggleWishlist }: ProductCardProps) => {
   const { toast } = useToast();
+  const { addToCart } = useCart();
+
+  const handleQuickAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const size = product.sizes?.[0] || "M";
+    const gsm = product.gsm?.[0];
+    const unitPrice = product.is_on_sale && product.discounted_price ? product.discounted_price : product.price;
+
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: unitPrice,
+      size,
+      gsm,
+      collection: product.collection,
+      image_url: product.image,
+    });
+
+    toast({
+      title: "Added to cart",
+      description: `${product.name}${size ? ` • ${size}` : ""}${gsm ? ` • ${gsm} GSM` : ""}`,
+    });
+  };
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!onToggleWishlist) {
+      toast({
+        title: "Wishlist unavailable",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await onToggleWishlist(product.id);
+  };
 
   return (
     <motion.div
@@ -60,6 +104,34 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
               />
+
+              {showQuickActions && (
+                <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-20">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm border border-border/50 shadow-md hover:bg-white"
+                    onClick={handleToggleWishlist}
+                    aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                  >
+                    <Heart
+                      className={`h-5 w-5 ${isWishlisted ? "fill-reforma-brown text-reforma-brown" : "text-reforma-brown"}`}
+                    />
+                  </Button>
+
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm border border-border/50 shadow-md hover:bg-white"
+                    onClick={handleQuickAddToCart}
+                    aria-label="Quick add to cart"
+                  >
+                    <ShoppingCart className="h-5 w-5 text-reforma-brown" />
+                  </Button>
+                </div>
+              )}
               
               <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                 <Badge variant="secondary" className="bg-white/90 text-reforma-brown border-border/50 backdrop-blur-sm luxury-tag shadow-md">

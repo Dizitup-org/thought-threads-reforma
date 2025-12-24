@@ -149,7 +149,7 @@ const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
                 variants={itemVariants}
                 className="serif-heading text-3xl font-bold text-reforma-brown mb-2"
               >
-                Welcome to R<span className="relative inline-block signature-e">ē</span>Forma
+                Welcome to R<span className="relative inline-block signature-e">e</span>Forma
               </motion.h1>
 
               <motion.p
@@ -163,10 +163,11 @@ const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
                 .signature-e::after {
                   content: '';
                   position: absolute;
-                  top: 35%;
-                  left: -15%;
-                  right: -15%;
-                  height: 2px;
+                  top: -0.17em;
+                  left: 50%;
+                  width: 0.62em;
+                  height: 1.5px;
+                  border-radius: 9999px;
                   background: linear-gradient(90deg, 
                     transparent 0%, 
                     hsl(var(--primary)) 15%, 
@@ -174,23 +175,23 @@ const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
                     hsl(var(--primary)) 85%, 
                     transparent 100%
                   );
-                  transform: scaleX(0);
+                  transform: translateX(-50%) scaleX(0);
                   transform-origin: left;
                   animation: signature-bar 0.5s 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-                  box-shadow: 0 0 6px hsl(var(--gold-accent) / 0.4);
+                  box-shadow: 0 0 4px hsl(var(--gold-accent) / 0.35);
                 }
                 
                 @keyframes signature-bar {
                   0% {
-                    transform: scaleX(0);
+                    transform: translateX(-50%) scaleX(0);
                     opacity: 0;
                   }
                   70% {
-                    transform: scaleX(1.1);
+                    transform: translateX(-50%) scaleX(1.1);
                     opacity: 1;
                   }
                   100% {
-                    transform: scaleX(1);
+                    transform: translateX(-50%) scaleX(1);
                     opacity: 1;
                   }
                 }

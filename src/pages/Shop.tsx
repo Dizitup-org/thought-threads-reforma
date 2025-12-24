@@ -15,6 +15,7 @@ import { Search, Filter, Grid, List } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Product {
   id: string;
@@ -35,6 +36,7 @@ interface Product {
 }
 
 const Shop = () => {
+  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,12 +50,16 @@ const Shop = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [allGsms, setAllGsms] = useState<number[]>([]);
 
+  const [wishlistProfileId, setWishlistProfileId] = useState<string | null>(null);
+  const [wishlistedProductIds, setWishlistedProductIds] = useState<Set<string>>(new Set());
+
   // Available GSM options as per requirements
   const gsmOptions = [180, 210, 220, 240];
 
   useEffect(() => {
     fetchProducts();
     fetchCollections();
+    fetchWishlist();
     
     // Set up real-time subscription
     const channel = supabase
@@ -74,6 +80,114 @@ const Shop = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const fetchWishlist = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setWishlistProfileId(null);
+        setWishlistedProductIds(new Set());
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      if (!profile?.id) {
+        setWishlistProfileId(null);
+        setWishlistedProductIds(new Set());
+        return;
+      }
+
+      setWishlistProfileId(profile.id);
+
+      const { data: rows, error } = await supabase
+        .from('wishlist')
+        .select('product_id')
+        .eq('user_id', profile.id);
+
+      if (error) throw error;
+
+      const next = new Set((rows || []).map((r: any) => String(r.product_id)));
+      setWishlistedProductIds(next);
+    } catch (error) {
+      console.error('Error fetching wishlist:', error);
+      setWishlistProfileId(null);
+      setWishlistedProductIds(new Set());
+    }
+  };
+
+  const toggleWishlist = async (productId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Login required',
+          description: 'Please log in to use your wishlist.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      let profileId = wishlistProfileId;
+      if (!profileId) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single();
+        profileId = profile?.id ?? null;
+        setWishlistProfileId(profileId);
+      }
+
+      if (!profileId) {
+        toast({
+          title: 'Profile not found',
+          description: 'Please try again after logging in.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const isAlready = wishlistedProductIds.has(productId);
+
+      if (isAlready) {
+        const { error } = await supabase
+          .from('wishlist')
+          .delete()
+          .eq('user_id', profileId)
+          .eq('product_id', productId);
+        if (error) throw error;
+
+        setWishlistedProductIds((prev) => {
+          const next = new Set(prev);
+          next.delete(productId);
+          return next;
+        });
+
+        toast({ title: 'Removed from wishlist' });
+      } else {
+        const { error } = await supabase
+          .from('wishlist')
+          .insert({ user_id: profileId, product_id: productId });
+        if (error) throw error;
+
+        setWishlistedProductIds((prev) => new Set(prev).add(productId));
+
+        toast({ title: 'Added to wishlist' });
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      toast({
+        title: 'Wishlist error',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   useEffect(() => {
     filterAndSortProducts();
@@ -381,6 +495,9 @@ const Shop = () => {
               >
                 <ProductCard
                   product={transformProductForCard(product)}
+                  showQuickActions
+                  isWishlisted={wishlistedProductIds.has(product.id)}
+                  onToggleWishlist={toggleWishlist}
                 />
               </motion.div>
             ))}

@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import NewsletterForm from "@/components/NewsletterForm";
-import VideoBackground from "@/components/VideoBackground";
 import CustomerReviews from "@/components/CustomerReviews";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-reforma-tshirt.jpg";
+import heroModelImage from "@/assets/hero-luxury-model.jpg";
 interface Product {
   id: string;
   name: string;
@@ -31,6 +32,8 @@ interface Product {
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [latestProducts, setLatestProducts] = useState<Product[]>([]);
+  const [heroSearch, setHeroSearch] = useState("");
+  const carouselRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchFeaturedProducts();
@@ -124,6 +127,9 @@ const Home = () => {
     featured: product.featured
   });
 
+  // Keep a consistent “subject” background (like the reference hero). The carousel is still real product data.
+  const heroBlurSrc = heroModelImage;
+
   return (
     <div className="min-h-screen">
       {/* Sale Banner */}
@@ -131,111 +137,147 @@ const Home = () => {
       
       {/* Hero Section - Elevated Luxury */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden luxury-section hero-section">
-        <VideoBackground 
-          videoSrc="/videos/Replace_Characters_in_Video_Background.mp4"
-          imageSrc={heroImage}
-          overlayOpacity={0.6}
-        >
-          {/* Luxury Brand Animation */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="luxury-animation-container opacity-20">
-              <motion.div 
-                className="luxury-circle luxury-circle-1"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-              ></motion.div>
-              <motion.div 
-                className="luxury-circle luxury-circle-2"
-                animate={{ rotate: -360 }}
-                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-              ></motion.div>
-              <motion.div 
-                className="luxury-circle luxury-circle-3"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              ></motion.div>
-            </div>
-          </div>
-        </VideoBackground>
+        {/* Blurred background image layer (matches provided hero reference) */}
+        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+          <img
+            src={heroBlurSrc}
+            alt=""
+            className="h-full w-full object-cover scale-110 blur-xl"
+            style={{ filter: "blur(22px) saturate(0.95) contrast(1.05) brightness(0.9)" }}
+            loading="eager"
+          />
+          {/* Slightly sharper ghost layer so the subject doesn't feel blank */}
+          <img
+            src={heroBlurSrc}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover scale-105 blur-md opacity-25"
+            style={{ filter: "blur(10px) saturate(0.95) contrast(1.05) brightness(0.95)" }}
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-background/20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/5 via-background/10 to-background/25" />
+        </div>
 
-        <div className="relative z-10 text-left px-4 sm:px-6 lg:px-16 max-w-7xl mx-auto">
-          <motion.div className="max-w-xl">
-            <motion.h1 
-              className="text-6xl md:text-7xl lg:text-8xl mb-6"
-              style={{ 
+        <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto text-center">
+            <motion.h1
+              className="text-3xl sm:text-4xl md:text-5xl tracking-[0.35em] uppercase"
+              style={{
                 fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontWeight: 300,
-                color: 'hsl(var(--primary))',
-                letterSpacing: '0.08em',
-                lineHeight: 1,
+                fontWeight: 500,
+                color: "hsl(var(--primary))",
               }}
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, delay: 0.3 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
             >
-              R<motion.span 
-                className="relative inline-block"
-                initial={{ opacity: 1 }}
-                animate={{ opacity: 1 }}
-              >
-                e
-                {/* Macron bar over the e - matching welcome animation */}
-                <motion.span
-                  className="absolute"
-                  style={{ 
-                    top: '-0.08em',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '80%',
-                    height: '2px',
-                    background: 'hsl(var(--primary))',
-                    transformOrigin: 'center'
-                  }}
-                  initial={{ scaleX: 0, opacity: 0 }}
-                  animate={{ scaleX: 1, opacity: 1 }}
-                  transition={{ 
-                    duration: 0.5,
-                    delay: 1.2,
-                    ease: [0.4, 0, 0.2, 1]
-                  }}
-                />
-              </motion.span>forma
+              What are you looking for?
             </motion.h1>
-            
-            <motion.p 
-              className="text-xl md:text-2xl mb-10 max-w-lg luxury-subheading"
-              style={{ 
-                color: 'hsl(var(--primary) / 0.85)',
-                fontWeight: 400,
-                lineHeight: 1.6
-              }}
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, delay: 0.5 }}
-            >
-              Where sophistication meets consciousness. Timeless fashion for the modern intellectual.
-            </motion.p>
-            
+
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, delay: 0.7 }}
+              className="mt-6 sm:mt-8 mx-auto w-full max-w-2xl"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.35 }}
             >
-              <Button 
-                asChild 
-                size="lg" 
-                className="bg-primary text-primary-foreground hover:bg-primary-hover px-10 py-7 text-lg font-medium luxury-button shadow-luxury hover:shadow-gold transition-all duration-300"
-                style={{
-                  borderRadius: '2px',
-                  letterSpacing: '0.05em'
+              <div className="flex items-center gap-3 rounded-full border border-border/60 bg-background/35 backdrop-blur-md px-4 py-2">
+                <Search className="h-5 w-5 text-muted-foreground" />
+                <Input
+                  value={heroSearch}
+                  onChange={(e) => setHeroSearch(e.target.value)}
+                  placeholder="Trendy elegant fashion"
+                  className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-10 w-10 rounded-full"
+                  asChild
+                >
+                  <Link
+                    to={heroSearch.trim() ? `/shop?search=${encodeURIComponent(heroSearch.trim())}` : "/shop"}
+                    aria-label="Search"
+                  >
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+                </Button>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="mt-10 sm:mt-12 relative"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+            >
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-11 w-11 rounded-full bg-background/35 backdrop-blur-md border border-border/60"
+                onClick={() => {
+                  const el = carouselRef.current;
+                  if (!el) return;
+                  el.scrollBy({ left: -(el.clientWidth * 0.75), behavior: "smooth" });
                 }}
+                aria-label="Previous"
               >
-                <Link to="/shop">
-                  Explore Collection <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+
+              <div
+                ref={carouselRef}
+                className="mx-auto flex max-w-5xl gap-4 overflow-x-auto pb-6 px-2 snap-x snap-mandatory scroll-px-6"
+              >
+                {(latestProducts.length ? latestProducts : featuredProducts)
+                  .slice(0, 8)
+                  .map((product) => {
+                    const imageSrc = product.image_url || heroImage;
+                    return (
+                      <Link
+                        key={product.id}
+                        to={`/product/${product.id}`}
+                        className="snap-center shrink-0 w-40 sm:w-44 md:w-52 lg:w-60"
+                        aria-label={product.name}
+                      >
+                        <motion.div
+                          className="rounded-2xl overflow-hidden border border-border/60 bg-background/25 backdrop-blur-sm shadow-lg will-change-transform"
+                          initial={false}
+                          whileHover={{ scale: 1.06, y: -6 }}
+                          transition={{ type: "spring", stiffness: 320, damping: 22 }}
+                        >
+                          <motion.img
+                            src={imageSrc}
+                            alt={product.name}
+                            className="h-56 sm:h-60 md:h-64 w-full object-cover"
+                            loading="lazy"
+                            initial={false}
+                            whileHover={{ scale: 1.04 }}
+                            transition={{ duration: 0.35, ease: "easeOut" }}
+                          />
+                        </motion.div>
+                      </Link>
+                    );
+                  })}
+              </div>
+
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-11 w-11 rounded-full bg-background/35 backdrop-blur-md border border-border/60"
+                onClick={() => {
+                  const el = carouselRef.current;
+                  if (!el) return;
+                  el.scrollBy({ left: el.clientWidth * 0.75, behavior: "smooth" });
+                }}
+                aria-label="Next"
+              >
+                <ChevronRight className="h-5 w-5" />
               </Button>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
       </section>
       {/* Featured Collections */}

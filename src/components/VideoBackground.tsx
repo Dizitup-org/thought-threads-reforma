@@ -1,7 +1,15 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface VideoBackgroundProps {
   videoSrc?: string;
+  mobileVideoSrc?: string;
+  desktopVideoSrc?: string;
+  posterSrc?: string;
+  objectPosition?: string;
+  mobileObjectPosition?: string;
+  desktopObjectPosition?: string;
+  disableVideoOnReducedMotion?: boolean;
   gifSrc?: string;
   imageSrc?: string;
   children?: React.ReactNode;
@@ -11,44 +19,65 @@ interface VideoBackgroundProps {
 
 const VideoBackground = ({ 
   videoSrc, 
+  mobileVideoSrc,
+  desktopVideoSrc,
+  posterSrc,
+  objectPosition,
+  mobileObjectPosition,
+  desktopObjectPosition,
+  disableVideoOnReducedMotion = true,
   gifSrc, 
   imageSrc,
   children,
   overlayOpacity = 0.5,
   overlayColor = "var(--cream-light)"
 }: VideoBackgroundProps) => {
+  const isMobile = useIsMobile();
+  const prefersReducedMotion = useReducedMotion();
+
+  const selectedVideoSrc = (isMobile ? mobileVideoSrc : desktopVideoSrc) ?? videoSrc;
+  const selectedObjectPosition =
+    (isMobile ? mobileObjectPosition : desktopObjectPosition) ??
+    objectPosition ??
+    "center center";
+
+  const shouldRenderVideo =
+    !!selectedVideoSrc && !(disableVideoOnReducedMotion && prefersReducedMotion);
+
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* Video Background with Premium Visual Treatment */}
-      {videoSrc && (
+      {shouldRenderVideo && (
         <motion.video
           className="absolute inset-0 w-full h-full"
           style={{
             objectFit: 'cover',
-            objectPosition: 'center center',
+            objectPosition: selectedObjectPosition,
             filter: 'saturate(0.85) contrast(1.05) brightness(0.95)',
           }}
           autoPlay
           loop
           muted
           playsInline
+          preload="metadata"
+          poster={posterSrc}
           initial={{ scale: 1.05, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.8, ease: "easeOut" }}
         >
-          <source src={videoSrc} type="video/mp4" />
+          <source src={selectedVideoSrc} type="video/mp4" />
           Your browser does not support the video tag.
         </motion.video>
       )}
       
       {/* GIF Background */}
-      {gifSrc && !videoSrc && (
+      {gifSrc && !shouldRenderVideo && (
         <motion.div
           className="absolute inset-0 w-full h-full"
           style={{
             backgroundImage: `url(${gifSrc})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition: selectedObjectPosition,
             backgroundRepeat: 'no-repeat',
             filter: 'saturate(0.85) contrast(1.05) brightness(0.95)',
           }}
@@ -59,12 +88,12 @@ const VideoBackground = ({
       )}
       
       {/* Static Image Background (fallback) */}
-      {imageSrc && !videoSrc && !gifSrc && (
+      {imageSrc && !shouldRenderVideo && !gifSrc && (
         <motion.div
           className="absolute inset-0 bg-cover bg-no-repeat"
           style={{
             backgroundImage: `url(${imageSrc})`,
-            backgroundPosition: 'center right',
+            backgroundPosition: selectedObjectPosition,
             backgroundSize: 'cover',
             objectFit: 'cover',
             filter: 'saturate(0.85) contrast(1.05) brightness(0.95)',
