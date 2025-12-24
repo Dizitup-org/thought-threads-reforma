@@ -60,17 +60,20 @@ const AnimatedRoutes = () => {
 };
 
 const App = () => {
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return sessionStorage.getItem('reforma_welcome_seen') !== 'true';
+    } catch {
+      return true;
+    }
+  });
   const [usePremiumAnimation, setUsePremiumAnimation] = useState(true);
   const [userData, setUserData] = useState<{ name: string; email: string; phone: string } | null>(null);
 
-  // Always show welcome animation on reload
   useEffect(() => {
     const premiumSetting = localStorage.getItem('reforma_premium_welcome');
-    
-    // Always show welcome animation
-    setShowWelcome(true);
-    
+
     if (premiumSetting !== null) {
       setUsePremiumAnimation(premiumSetting === 'true');
     }
@@ -82,7 +85,11 @@ const App = () => {
       localStorage.setItem('reforma_user_data', JSON.stringify(data));
     }
     setShowWelcome(false);
-    // Don't set the completion flag to ensure animation shows on every reload
+    try {
+      sessionStorage.setItem('reforma_welcome_seen', 'true');
+    } catch {
+      // ignore
+    }
   };
 
   const handlePremiumAnimationComplete = () => {

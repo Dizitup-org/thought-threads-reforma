@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { ShoppingCart, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
@@ -26,11 +26,9 @@ interface Product {
 interface ProductCardProps {
   product: Product;
   showQuickActions?: boolean;
-  isWishlisted?: boolean;
-  onToggleWishlist?: (productId: string) => Promise<void> | void;
 }
 
-const ProductCard = ({ product, showQuickActions = false, isWishlisted = false, onToggleWishlist }: ProductCardProps) => {
+const ProductCard = ({ product, showQuickActions = false }: ProductCardProps) => {
   const { toast } = useToast();
   const { addToCart } = useCart();
 
@@ -56,22 +54,6 @@ const ProductCard = ({ product, showQuickActions = false, isWishlisted = false, 
       title: "Added to cart",
       description: `${product.name}${size ? ` • ${size}` : ""}${gsm ? ` • ${gsm} GSM` : ""}`,
     });
-  };
-
-  const handleToggleWishlist = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!onToggleWishlist) {
-      toast({
-        title: "Wishlist unavailable",
-        description: "Please try again in a moment.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    await onToggleWishlist(product.id);
   };
 
   return (
@@ -107,19 +89,6 @@ const ProductCard = ({ product, showQuickActions = false, isWishlisted = false, 
 
               {showQuickActions && (
                 <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-20">
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm border border-border/50 shadow-md hover:bg-white"
-                    onClick={handleToggleWishlist}
-                    aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                  >
-                    <Heart
-                      className={`h-5 w-5 ${isWishlisted ? "fill-reforma-brown text-reforma-brown" : "text-reforma-brown"}`}
-                    />
-                  </Button>
-
                   <Button
                     type="button"
                     size="icon"

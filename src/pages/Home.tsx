@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import NewsletterForm from "@/components/NewsletterForm";
-import CustomerReviews from "@/components/CustomerReviews";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-reforma-tshirt.jpg";
 import heroModelImage from "@/assets/hero-luxury-model.jpg";
@@ -389,7 +388,6 @@ const Home = () => {
       </motion.section>
 
       {/* Customer Reviews Section */}
-      <CustomerReviews />
 
       {/* Threads of Thought Story */}
       <motion.section 

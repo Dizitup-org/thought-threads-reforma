@@ -15,7 +15,6 @@ import { Search, Filter, Grid, List } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 interface Product {
   id: string;
@@ -36,7 +35,6 @@ interface Product {
 }
 
 const Shop = () => {
-  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,16 +48,12 @@ const Shop = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [allGsms, setAllGsms] = useState<number[]>([]);
 
-  const [wishlistProfileId, setWishlistProfileId] = useState<string | null>(null);
-  const [wishlistedProductIds, setWishlistedProductIds] = useState<Set<string>>(new Set());
-
   // Available GSM options as per requirements
   const gsmOptions = [180, 210, 220, 240];
 
   useEffect(() => {
     fetchProducts();
     fetchCollections();
-    fetchWishlist();
     
     // Set up real-time subscription
     const channel = supabase
@@ -80,114 +74,6 @@ const Shop = () => {
       supabase.removeChannel(channel);
     };
   }, []);
-
-  const fetchWishlist = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setWishlistProfileId(null);
-        setWishlistedProductIds(new Set());
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_user_id', user.id)
-        .single();
-
-      if (!profile?.id) {
-        setWishlistProfileId(null);
-        setWishlistedProductIds(new Set());
-        return;
-      }
-
-      setWishlistProfileId(profile.id);
-
-      const { data: rows, error } = await supabase
-        .from('wishlist')
-        .select('product_id')
-        .eq('user_id', profile.id);
-
-      if (error) throw error;
-
-      const next = new Set((rows || []).map((r: any) => String(r.product_id)));
-      setWishlistedProductIds(next);
-    } catch (error) {
-      console.error('Error fetching wishlist:', error);
-      setWishlistProfileId(null);
-      setWishlistedProductIds(new Set());
-    }
-  };
-
-  const toggleWishlist = async (productId: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: 'Login required',
-          description: 'Please log in to use your wishlist.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      let profileId = wishlistProfileId;
-      if (!profileId) {
-        const { data: profile } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_user_id', user.id)
-          .single();
-        profileId = profile?.id ?? null;
-        setWishlistProfileId(profileId);
-      }
-
-      if (!profileId) {
-        toast({
-          title: 'Profile not found',
-          description: 'Please try again after logging in.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const isAlready = wishlistedProductIds.has(productId);
-
-      if (isAlready) {
-        const { error } = await supabase
-          .from('wishlist')
-          .delete()
-          .eq('user_id', profileId)
-          .eq('product_id', productId);
-        if (error) throw error;
-
-        setWishlistedProductIds((prev) => {
-          const next = new Set(prev);
-          next.delete(productId);
-          return next;
-        });
-
-        toast({ title: 'Removed from wishlist' });
-      } else {
-        const { error } = await supabase
-          .from('wishlist')
-          .insert({ user_id: profileId, product_id: productId });
-        if (error) throw error;
-
-        setWishlistedProductIds((prev) => new Set(prev).add(productId));
-
-        toast({ title: 'Added to wishlist' });
-      }
-    } catch (error) {
-      console.error('Error toggling wishlist:', error);
-      toast({
-        title: 'Wishlist error',
-        description: 'Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
 
   useEffect(() => {
     filterAndSortProducts();
@@ -464,24 +350,14 @@ const Shop = () => {
           </Card>
         </motion.div>
 
-        {/* Products Grid */}
-        {filteredProducts.length === 0 ? (
-          <motion.div 
-            className="text-center py-12"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-          >
-            <p className="text-xl text-muted-foreground mb-4">No products found</p>
-            <p className="text-muted-foreground">Try adjusting your filters or search terms</p>
-          </motion.div>
-        ) : (
-          <motion.div 
-            className={`grid gap-8 ${
-              viewMode === "grid" 
-                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
-                : "grid-cols-1"
-            }`}
+        {/* Products */}
+        {filteredProducts.length > 0 ? (
+          <motion.div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                : "grid grid-cols-1 gap-6"
+            }
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
@@ -491,16 +367,20 @@ const Shop = () => {
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
+                transition={{ duration: 0.4, delay: index * 0.06 }}
               >
-                <ProductCard
-                  product={transformProductForCard(product)}
-                  showQuickActions
-                  isWishlisted={wishlistedProductIds.has(product.id)}
-                  onToggleWishlist={toggleWishlist}
-                />
+                <ProductCard product={transformProductForCard(product)} showQuickActions />
               </motion.div>
             ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            className="text-center py-16"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
+          >
+            <p className="text-muted-foreground text-lg">No products found.</p>
           </motion.div>
         )}
       </motion.div>

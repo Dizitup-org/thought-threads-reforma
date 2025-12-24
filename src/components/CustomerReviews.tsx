@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Review {
   id: string;
@@ -15,78 +16,6 @@ interface Review {
   rating: number;
   comment: string;
   created_at: string;
-}
-
-const STORAGE_KEY = "reforma.customerReviews.v1";
-
-const DUMMY_REVIEW_IDS = new Set(["seed-1", "seed-2", "seed-3"]);
-
-function isLikelyDummyReview(r: Review) {
-  if (DUMMY_REVIEW_IDS.has(r.id)) return true;
-
-  const name = r.name.trim().toLowerCase();
-  const location = (r.location ?? "").trim().toLowerCase();
-
-  // Backward-compat cleanup for previously seeded demo content.
-  if (name === "amina" && location === "london, uk") return true;
-  if (name === "noah" && location === "toronto, ca") return true;
-  if (name === "sofia" && location === "new york, us") return true;
-
-  return false;
-}
-
-function readStoredReviews(): Review[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .filter(Boolean)
-      .map((r) => ({
-        id: String((r as any).id ?? ""),
-        name: String((r as any).name ?? ""),
-        location:
-          (r as any).location === null || (r as any).location === undefined
-            ? null
-            : String((r as any).location),
-        rating: Number((r as any).rating ?? 0),
-        comment: String((r as any).comment ?? ""),
-        created_at: String((r as any).created_at ?? new Date().toISOString()),
-      }))
-      .filter((r) => r.id && r.name && r.comment && r.rating >= 1 && r.rating <= 5);
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredReviews(reviews: Review[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-  } catch {
-    // ignore quota / privacy mode
-  }
-}
-
-function cleanupStoredReviews() {
-  const existing = readStoredReviews();
-  const cleaned = existing.filter((r) => !isLikelyDummyReview(r));
-  if (cleaned.length !== existing.length) {
-    writeStoredReviews(cleaned);
-  }
-  return cleaned;
-}
-
-function createLocalId() {
-  try {
-    if (globalThis.crypto && "randomUUID" in globalThis.crypto) {
-      return (globalThis.crypto as Crypto).randomUUID();
-    }
-  } catch {
-    // ignore
-  }
-  return `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 const StarRating = ({ rating, interactive = false, onRatingChange }: { 
@@ -137,20 +66,23 @@ const ReviewForm = ({ onSuccess }: { onSuccess: () => void }) => {
     setIsSubmitting(true);
     
     try {
-      const current = cleanupStoredReviews();
-      const newReview: Review = {
-        id: createLocalId(),
+      const payload = {
         name: name.trim(),
         location: location.trim() || null,
         rating,
         comment: comment.trim(),
-        created_at: new Date().toISOString(),
       };
-      writeStoredReviews([newReview, ...current]);
+
+      // Prefer immediate visibility if the schema/policies allow it.
+      const attempt1 = await supabase.from('reviews').insert({ ...payload, is_approved: true });
+      if (attempt1.error) {
+        const attempt2 = await supabase.from('reviews').insert(payload);
+        if (attempt2.error) throw attempt2.error;
+      }
 
       toast({
         title: "Thank you!",
-        description: "Your review is now visible on this device."
+        description: "Your review is now visible to everyone."
       });
       
       setName("");
@@ -239,13 +171,33 @@ const CustomerReviews = () => {
 
   const fetchReviews = async () => {
     try {
-      const all = cleanupStoredReviews();
-      const sorted = [...all].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setReviews(sorted.slice(0, 6));
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('id,name,location,rating,comment,created_at,is_approved')
+        .or('is_approved.is.null,is_approved.eq.true')
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      if (error) throw error;
+
+      const next = (data || []).map((r: any) => ({
+        id: String(r.id),
+        name: String(r.name ?? ''),
+        location: r.location === null || r.location === undefined ? null : String(r.location),
+        rating: Number(r.rating ?? 0),
+        comment: String(r.comment ?? ''),
+        created_at: String(r.created_at ?? new Date().toISOString()),
+      }))
+      .filter((r) => r.id && r.name && r.comment && r.rating >= 1 && r.rating <= 5);
+
+      setReviews(next);
     } catch (error) {
       console.error("Error fetching reviews:", error);
+      toast({
+        title: "Reviews unavailable",
+        description: "Couldn't load reviews right now.",
+        variant: "destructive",
+      });
     }
   };
 
