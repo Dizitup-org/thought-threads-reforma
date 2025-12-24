@@ -1,85 +1,196 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { Star, PenLine } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface Review {
-  id: number;
+  id: string;
   name: string;
-  location: string;
+  location: string | null;
   rating: number;
   comment: string;
-  date: string;
+  created_at: string;
 }
 
-const reviews: Review[] = [
-  {
-    id: 1,
-    name: "Arjun Mehta",
-    location: "Mumbai",
-    rating: 5,
-    comment: "The quality of the fabric is exceptional. Every piece feels like it was made with intention and care. Truly conscious fashion.",
-    date: "2 weeks ago"
-  },
-  {
-    id: 2,
-    name: "Priya Sharma",
-    location: "Delhi",
-    rating: 5,
-    comment: "Finally found a brand that understands minimalist luxury. The fit is perfect and the attention to detail is remarkable.",
-    date: "1 month ago"
-  },
-  {
-    id: 3,
-    name: "Vikram Singh",
-    location: "Bangalore",
-    rating: 4,
-    comment: "Sophisticated designs that speak volumes without being loud. The Introspection tee is my new favorite.",
-    date: "3 weeks ago"
-  },
-  {
-    id: 4,
-    name: "Ananya Reddy",
-    location: "Hyderabad",
-    rating: 5,
-    comment: "The packaging, the quality, the philosophy - everything about RēForma resonates with me. Worth every rupee.",
-    date: "1 week ago"
-  },
-  {
-    id: 5,
-    name: "Rahul Kapoor",
-    location: "Pune",
-    rating: 5,
-    comment: "These aren't just clothes, they're statements. The craftsmanship is unmatched in this price range.",
-    date: "2 months ago"
-  },
-  {
-    id: 6,
-    name: "Meera Iyer",
-    location: "Chennai",
-    rating: 4,
-    comment: "Elegant and thoughtful designs. The fabric quality exceeded my expectations. Will definitely order again.",
-    date: "1 month ago"
-  }
-];
-
-const StarRating = ({ rating }: { rating: number }) => {
+const StarRating = ({ rating, interactive = false, onRatingChange }: { 
+  rating: number; 
+  interactive?: boolean;
+  onRatingChange?: (rating: number) => void;
+}) => {
+  const [hoverRating, setHoverRating] = useState(0);
+  
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={`h-4 w-4 ${
-            star <= rating
+          className={`h-5 w-5 transition-colors ${
+            star <= (hoverRating || rating)
               ? "fill-gold text-gold"
               : "fill-none text-muted-foreground/30"
-          }`}
+          } ${interactive ? "cursor-pointer" : ""}`}
+          onClick={() => interactive && onRatingChange?.(star)}
+          onMouseEnter={() => interactive && setHoverRating(star)}
+          onMouseLeave={() => interactive && setHoverRating(0)}
         />
       ))}
     </div>
   );
 };
 
+const ReviewForm = ({ onSuccess }: { onSuccess: () => void }) => {
+  const [name, setName] = useState("");
+  const [location, setLocation] = useState("");
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!name.trim() || !comment.trim()) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in your name and review.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const { error } = await supabase.from("reviews").insert({
+        name: name.trim(),
+        location: location.trim() || null,
+        rating,
+        comment: comment.trim()
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Thank you!",
+        description: "Your review has been submitted successfully."
+      });
+      
+      setName("");
+      setLocation("");
+      setRating(5);
+      setComment("");
+      onSuccess();
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit review. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Your Name *</Label>
+        <Input
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Enter your name"
+          maxLength={100}
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="location">Location (optional)</Label>
+        <Input
+          id="location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="e.g., Mumbai, Delhi"
+          maxLength={100}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label>Rating *</Label>
+        <StarRating rating={rating} interactive onRatingChange={setRating} />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="comment">Your Review *</Label>
+        <Textarea
+          id="comment"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Share your experience with RēForma..."
+          rows={4}
+          maxLength={500}
+          required
+        />
+      </div>
+      
+      <Button type="submit" className="w-full luxury-btn-primary" disabled={isSubmitting}>
+        {isSubmitting ? "Submitting..." : "Submit Review"}
+      </Button>
+    </form>
+  );
+};
+
+const formatTimeAgo = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffInDays === 0) return "Today";
+  if (diffInDays === 1) return "Yesterday";
+  if (diffInDays < 7) return `${diffInDays} days ago`;
+  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} week${Math.floor(diffInDays / 7) > 1 ? 's' : ''} ago`;
+  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} month${Math.floor(diffInDays / 30) > 1 ? 's' : ''} ago`;
+  return `${Math.floor(diffInDays / 365)} year${Math.floor(diffInDays / 365) > 1 ? 's' : ''} ago`;
+};
+
 const CustomerReviews = () => {
-  const averageRating = (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const fetchReviews = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(6);
+
+      if (error) throw error;
+      setReviews(data || []);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  const handleReviewSuccess = () => {
+    setIsDialogOpen(false);
+    fetchReviews();
+  };
+
+  const averageRating = reviews.length > 0 
+    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
+    : "5.0";
   const totalReviews = reviews.length;
 
   return (
@@ -102,7 +213,7 @@ const CustomerReviews = () => {
           
           {/* Overall Rating */}
           <motion.div
-            className="flex items-center justify-center gap-3"
+            className="flex items-center justify-center gap-3 mb-6"
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -119,40 +230,76 @@ const CustomerReviews = () => {
             <span className="text-2xl font-semibold text-reforma-brown">{averageRating}</span>
             <span className="text-muted-foreground">({totalReviews}+ reviews)</span>
           </motion.div>
+
+          {/* Write Review Button */}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="luxury-btn-outline">
+                <PenLine className="mr-2 h-4 w-4" />
+                Write a Review
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="serif-heading text-xl text-reforma-brown">
+                  Share Your Experience
+                </DialogTitle>
+              </DialogHeader>
+              <ReviewForm onSuccess={handleReviewSuccess} />
+            </DialogContent>
+          </Dialog>
         </motion.div>
 
         {/* Reviews Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {reviews.map((review, index) => (
-            <motion.div
-              key={review.id}
-              className="bg-background rounded-lg p-6 shadow-soft hover:shadow-luxury transition-shadow duration-300 border border-border/50"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true, margin: "-50px" }}
-            >
-              {/* Rating */}
-              <div className="mb-4">
-                <StarRating rating={review.rating} />
-              </div>
-              
-              {/* Comment */}
-              <p className="text-foreground/80 leading-relaxed mb-4 italic">
-                "{review.comment}"
-              </p>
-              
-              {/* Author */}
-              <div className="flex items-center justify-between pt-4 border-t border-border/30">
-                <div>
-                  <p className="font-medium text-reforma-brown">{review.name}</p>
-                  <p className="text-sm text-muted-foreground">{review.location}</p>
+        {reviews.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {reviews.map((review, index) => (
+              <motion.div
+                key={review.id}
+                className="bg-background rounded-lg p-6 shadow-soft hover:shadow-luxury transition-shadow duration-300 border border-border/50"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true, margin: "-50px" }}
+              >
+                {/* Rating */}
+                <div className="mb-4">
+                  <StarRating rating={review.rating} />
                 </div>
-                <span className="text-xs text-muted-foreground">{review.date}</span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                
+                {/* Comment */}
+                <p className="text-foreground/80 leading-relaxed mb-4 italic">
+                  "{review.comment}"
+                </p>
+                
+                {/* Author */}
+                <div className="flex items-center justify-between pt-4 border-t border-border/30">
+                  <div>
+                    <p className="font-medium text-reforma-brown">{review.name}</p>
+                    {review.location && (
+                      <p className="text-sm text-muted-foreground">{review.location}</p>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {formatTimeAgo(review.created_at)}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <motion.div
+            className="text-center py-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
+            <p className="text-muted-foreground text-lg mb-4">
+              Be the first to share your experience!
+            </p>
+          </motion.div>
+        )}
       </div>
     </section>
   );
