@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Review {
   id: string;
@@ -74,10 +73,14 @@ const ReviewForm = ({ onSuccess }: { onSuccess: () => void }) => {
       };
 
       // Prefer immediate visibility if the schema/policies allow it.
-      const attempt1 = await supabase.from('reviews').insert({ ...payload, is_approved: true });
-      if (attempt1.error) {
-        const attempt2 = await supabase.from('reviews').insert(payload);
-        if (attempt2.error) throw attempt2.error;
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit review');
       }
 
       toast({
@@ -171,14 +174,10 @@ const CustomerReviews = () => {
 
   const fetchReviews = async () => {
     try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('id,name,location,rating,comment,created_at,is_approved')
-        .or('is_approved.is.null,is_approved.eq.true')
-        .order('created_at', { ascending: false })
-        .limit(6);
-
-      if (error) throw error;
+      const response = await fetch('/api/reviews');
+      if (!response.ok) throw new Error('Failed to fetch reviews');
+      
+      const data = await response.json();
 
       const next = (data || []).map((r: any) => ({
         id: String(r.id),
@@ -188,7 +187,7 @@ const CustomerReviews = () => {
         comment: String(r.comment ?? ''),
         created_at: String(r.created_at ?? new Date().toISOString()),
       }))
-      .filter((r) => r.id && r.name && r.comment && r.rating >= 1 && r.rating <= 5);
+      .filter((r: any) => r.id && r.name && r.comment && r.rating >= 1 && r.rating <= 5);
 
       setReviews(next);
     } catch (error) {

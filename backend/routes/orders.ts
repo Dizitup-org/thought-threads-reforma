@@ -15,6 +15,28 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
+// ── GET /api/orders/my-orders ────────────────────────────────────────────────
+router.get('/my-orders', async (req: Request, res: Response) => {
+  const userEmail = req.cookies?.auth_session;
+  if (!userEmail) return res.status(401).json({ message: 'Not authenticated' });
+
+  try {
+    const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [userEmail]);
+    if (userRes.rows.length === 0) return res.status(401).json({ message: 'User not found' });
+    const userId = userRes.rows[0].id;
+
+    const { rows } = await pool.query(
+      `SELECT * FROM orders
+       WHERE customer_email = $1
+       ORDER BY created_at DESC`,
+      [userEmail]
+    );
+    return res.status(200).json(rows);
+  } catch (err: any) {
+    return res.status(500).json({ message: 'Failed to fetch your orders', details: err.message });
+  }
+});
+
 // ── GET /api/orders/:id ──────────────────────────────────────────────────────
 router.get('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;

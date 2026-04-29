@@ -10,6 +10,9 @@ import collectionsRouter from './routes/collections.js';
 import bannersRouter from './routes/banners.js';
 import emailsRouter from './routes/emails.js';
 import usersRouter from './routes/users.js';
+import addressesRouter from './routes/addresses.js';
+import settingsRouter from './routes/settings.js';
+import reviewsRouter from './routes/reviews.js';
 
 // ── Environment ──────────────────────────────────────────────────────────────
 dotenv.config();
@@ -49,6 +52,9 @@ app.use('/api/collections', collectionsRouter);
 app.use('/api/banners',     bannersRouter);
 app.use('/api/emails',      emailsRouter);
 app.use('/api/users',       usersRouter);
+app.use('/api/addresses',   addressesRouter);
+app.use('/api/settings',    settingsRouter);
+app.use('/api/reviews',     reviewsRouter);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {

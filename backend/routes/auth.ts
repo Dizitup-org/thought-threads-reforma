@@ -166,7 +166,7 @@ router.post('/signup', async (req: Request, res: Response) => {
 });
 
 // ── GET /api/auth/me ─────────────────────────────────────────────────────────
-router.get('/me', (req: Request, res: Response) => {
+router.get('/me', async (req: Request, res: Response) => {
   const userEmail: string | undefined = req.cookies?.auth_session;
   const userRole: string | undefined  = req.cookies?.auth_role;
 
@@ -174,10 +174,27 @@ router.get('/me', (req: Request, res: Response) => {
     return res.status(401).json({ message: 'Not authenticated' });
   }
 
-  return res.status(200).json({
-    user:    { email: userEmail },
-    isAdmin: userRole === 'admin',
-  });
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, name, email, phone, avatar_url, username, created_at FROM users WHERE email = $1',
+      [userEmail]
+    );
+
+    if (rows.length === 0) {
+      // Clear invalid cookie
+      res.clearCookie('auth_session');
+      res.clearCookie('auth_role');
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      user: rows[0],
+      isAdmin: userRole === 'admin',
+    });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 // ── POST /api/auth/logout ────────────────────────────────────────────────────
