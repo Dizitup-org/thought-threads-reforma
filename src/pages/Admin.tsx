@@ -16,7 +16,38 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, Upload, Users, Package, Mail, Shield, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase, getAdminClient } from "@/integrations/supabase/client";
+import { getAdminClient } from "@/integrations/supabase/client";
+
+// Global mock for Supabase to prevent the old functions from crashing the page
+// before their respective backend routes are connected.
+const supabase: any = {
+  auth: {
+    signOut: () => Promise.resolve(),
+    getSession: () => Promise.resolve({ data: { session: null } }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+  },
+  channel: () => ({
+    on: () => ({
+      subscribe: () => {}
+    }),
+    subscribe: () => {}
+  }),
+  removeChannel: () => {},
+  from: () => ({
+    select: () => Promise.resolve({ data: [], error: null }),
+    insert: () => Promise.resolve({ data: [], error: null }),
+    update: () => Promise.resolve({ data: [], error: null }),
+    delete: () => Promise.resolve({ data: [], error: null })
+  }),
+  storage: {
+    from: () => ({
+      upload: () => Promise.resolve({ data: {}, error: null }),
+      getPublicUrl: () => ({ data: { publicUrl: "" } })
+    }),
+    listBuckets: () => Promise.resolve({ data: [], error: null }),
+    createBucket: () => Promise.resolve({ error: null })
+  }
+};
 
 // Use a flexible type that can handle both old and new data structures
 interface Product {
@@ -96,37 +127,36 @@ const Admin = () => {
   // Check if current user is an admin
   useEffect(() => {
     const checkAdminStatus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        // Not logged in at all - redirect to admin login
+      try {
+        const response = await fetch('/api/auth/me');
+        if (!response.ok) {
+          // Not logged in at all
+          window.location.href = '/auth?admin=true';
+          return;
+        }
+        
+        const sessionData = await response.json();
+        
+        if (!sessionData.isAdmin) {
+          // Not an admin
+          await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin privileges. Please use regular user login.",
+            variant: "destructive",
+          });
+          setTimeout(() => {
+            window.location.href = '/auth';
+          }, 2000);
+          return;
+        }
+        
+        // Valid admin user
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error("Auth check failed", err);
         window.location.href = '/auth?admin=true';
-        return;
       }
-      
-      // Check if this user is in admin_users table
-      const { data: admin, error } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', session.user.email)
-        .single();
-      
-      if (error || !admin) {
-        // Not an admin - sign them out and redirect
-        await supabase.auth.signOut();
-        toast({
-          title: "Access Denied",
-          description: "You don't have admin privileges. Please use regular user login.",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = '/auth';
-        }, 2000);
-        return;
-      }
-      
-      // Valid admin user
-      setIsAuthenticated(true);
     };
     
     checkAdminStatus();
@@ -146,7 +176,8 @@ const Admin = () => {
     fetchEmailSignups();
     fetchUsers();
     
-    // Set up real-time subscriptions for all tables
+    // Real-time subscriptions disabled until web sockets are implemented
+    /*
     const productsChannel = supabase
       .channel('products-changes')
       .on('postgres_changes', {
@@ -216,6 +247,7 @@ const Admin = () => {
       supabase.removeChannel(emailsChannel);
       supabase.removeChannel(usersChannel);
     };
+    */
   }, []);
 
   const fetchProducts = async () => {

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -16,19 +15,17 @@ const RLSFix = () => {
   const fixRLSPolicies = async () => {
     setStatus("running");
     setLogs([]);
-    addLog("Starting RLS policy fix...");
+    addLog("Starting RLS policy fix API call...");
 
     try {
-      // Test if we can read products (should work)
+      // Test if we can read products via API
       addLog("Testing read access...");
-      const { data: readTest, error: readError } = await supabase
-        .from('products')
-        .select('id')
-        .limit(1);
+      const readRes = await fetch('/api/rls-test/read');
       
-      if (readError) {
-        addLog(`Read test failed: ${readError.message}`);
-        throw readError;
+      if (!readRes.ok) {
+        const errorMsg = await readRes.text();
+        addLog(`Read test failed: ${errorMsg}`);
+        throw new Error(errorMsg);
       }
       addLog("Read access confirmed");
 
@@ -43,31 +40,30 @@ const RLSFix = () => {
         description: 'Test for RLS fix'
       };
 
-      const { data: insertTest, error: insertError } = await supabase
-        .from('products')
-        .insert([testProduct])
-        .select();
+      const insertRes = await fetch('/api/rls-test/insert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testProduct)
+      });
 
-      if (insertError) {
-        addLog(`Insert test failed (expected): ${insertError.message}`);
+      if (!insertRes.ok) {
+        const errorMsg = await insertRes.text();
+        addLog(`Insert test failed (expected if RLS blocks): ${errorMsg}`);
         
         // This confirms we have the RLS issue
         addLog("RLS policy issue confirmed. This is expected in the current setup.");
-        addLog("In a production environment, you would need to:");
-        addLog("1. Log in to your Supabase dashboard");
-        addLog("2. Go to Table Editor -> products table");
-        addLog("3. Click on 'Policies' tab");
-        addLog("4. Edit or create policies to allow INSERT operations");
-        addLog("5. For development, you can make policies permissive");
+        addLog("In a production environment targeting NeoDB, you would need to:");
+        addLog("1. Ensure your server-side database user has INSERT privileges");
+        addLog("2. Modify your NeoDB/Postgres permissions or application logic");
         
         setStatus("success");
-        addLog("RLS fix process completed. Please apply migrations manually in Supabase dashboard.");
+        addLog("RLS fix process completed. Please apply permissions manually if needed.");
         toast({
           title: "RLS Fix Info",
-          description: "RLS policies need to be updated in Supabase dashboard. Check the logs for details.",
+          description: "Database permissions need to be updated. Check the logs for details.",
         });
       } else {
-        addLog("Insert successful - RLS policies may already be fixed");
+        addLog("Insert successful - Database permissions may already be fine");
         setStatus("success");
         toast({
           title: "Success",

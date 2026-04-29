@@ -21,11 +21,6 @@ import ProductDetail from "./pages/ProductDetail";
 import NotFound from "./pages/NotFound";
 import WelcomeAnimation from "./components/WelcomeAnimation";
 import PremiumWelcomeAnimation from "./components/PremiumWelcomeAnimation";
-import AdminTest from "./pages/AdminTest";
-import ConnectionTest from "./pages/ConnectionTest";
-import RLSFix from "./pages/RLSFix";
-import StorageTest from "./pages/StorageTest";
-import DatabaseTest from "./pages/DatabaseTest";
 
 const queryClient = new QueryClient();
 
@@ -44,14 +39,9 @@ const AnimatedRoutes = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/admin" element={<Admin />} />
-        <Route path="/admin-test" element={<AdminTest />} />
-        <Route path="/connection-test" element={<ConnectionTest />} />
-        <Route path="/storage-test" element={<StorageTest />} />
-        <Route path="/rls-fix" element={<RLSFix />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/database-test" element={<DatabaseTest />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
