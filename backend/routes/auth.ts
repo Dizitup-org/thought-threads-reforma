@@ -102,7 +102,21 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid credentials. If you used an external provider previously, password login is not supported.' });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    let isValidPassword = false;
+    
+    if (user.password_hash.startsWith('$2')) {
+      isValidPassword = await bcrypt.compare(password, user.password_hash);
+    } else {
+      // Temporary fallback for legacy plain-text passwords
+      isValidPassword = password === user.password_hash;
+      
+      if (isValidPassword) {
+        // Transparently upgrade the password hash in the background
+        const saltRounds = 10;
+        const newHash = await bcrypt.hash(password, saltRounds);
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, user.id]).catch(console.error);
+      }
+    }
     
     if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid credentials' });
