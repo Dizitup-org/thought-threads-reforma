@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, Upload, Users, Package, Mail, Shield, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getAdminClient } from "@/integrations/supabase/client";
 
 // Global mock for Supabase to prevent the old functions from crashing the page
 // before their respective backend routes are connected.
@@ -98,26 +97,13 @@ const Admin = () => {
   // Database health check
   const checkDatabaseHealth = async () => {
     try {
-      // Test Supabase connection
-      const { data, error } = await supabase
-        .from('products')
-        .select('id')
-        .limit(1);
-      
-      if (error) {
-        setDbHealth({status: 'error', message: `Database error: ${error.message}`});
-        return false;
+      const res = await fetch('/api/health');
+      if (res.ok) {
+        setDbHealth({status: 'healthy', message: 'Backend API connected successfully'});
+        return true;
       }
-      
-      // Test storage connection
-      const { data: buckets, error: storageError } = await supabase.storage.listBuckets();
-      if (storageError) {
-        setDbHealth({status: 'error', message: `Storage error: ${storageError.message}`});
-        return false;
-      }
-      
-      setDbHealth({status: 'healthy', message: 'Database and storage connected successfully'});
-      return true;
+      setDbHealth({status: 'error', message: 'Backend API returned an error'});
+      return false;
     } catch (error: any) {
       setDbHealth({status: 'error', message: `Connection failed: ${error.message}`});
       return false;
@@ -252,40 +238,20 @@ const Admin = () => {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching products:', error);
-        toast({
-          title: "Error loading products",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-      // Type assertion to handle flexible data structure
+      const res = await fetch('/api/products');
+      const data = await res.json();
       setProducts(data as Product[] || []);
     } catch (error: any) {
       console.error('Error fetching products:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load products",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to load products", variant: "destructive" });
     }
   };
 
   const fetchCollections = async () => {
     try {
-      const { data, error } = await supabase
-        .from('collections')
-        .select('name');
-      
-      if (error) throw error;
-      setCollections(data?.map(c => c.name) || []);
+      const res = await fetch('/api/collections');
+      const data = await res.json();
+      setCollections(data?.map((c: any) => c.name) || []);
     } catch (error) {
       console.error('Error fetching collections:', error);
     }
@@ -293,18 +259,17 @@ const Admin = () => {
 
   const fetchStats = async () => {
     try {
-      const [productsCount, ordersCount, emailsCount, usersCount] = await Promise.all([
-        supabase.from('products').select('*', { count: 'exact', head: true }),
-        supabase.from('orders').select('*', { count: 'exact', head: true }),
-        supabase.from('email_signups').select('*', { count: 'exact', head: true }),
-        supabase.from('users').select('*', { count: 'exact', head: true })
+      const [products, orders, emails, users] = await Promise.all([
+        fetch('/api/products').then(r => r.json()),
+        fetch('/api/orders').then(r => r.json()),
+        fetch('/api/emails').then(r => r.json()),
+        fetch('/api/users').then(r => r.json()),
       ]);
-
       setStats({
-        totalProducts: productsCount.count || 0,
-        totalOrders: ordersCount.count || 0,
-        emailSignups: emailsCount.count || 0,
-        totalUsers: usersCount.count || 0
+        totalProducts: Array.isArray(products) ? products.length : 0,
+        totalOrders: Array.isArray(orders) ? orders.length : 0,
+        emailSignups: Array.isArray(emails) ? emails.length : 0,
+        totalUsers: Array.isArray(users) ? users.length : 0,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -313,13 +278,9 @@ const Admin = () => {
 
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setOrders(data || []);
+      const res = await fetch('/api/orders');
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
@@ -327,13 +288,9 @@ const Admin = () => {
 
   const fetchEmailSignups = async () => {
     try {
-      const { data, error } = await supabase
-        .from('email_signups')
-        .select('*')
-        .order('subscribed_at', { ascending: false });
-      
-      if (error) throw error;
-      setEmailSignups(data || []);
+      const res = await fetch('/api/emails');
+      const data = await res.json();
+      setEmailSignups(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching email signups:', error);
     }
@@ -341,13 +298,9 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setUsers(data || []);
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -355,60 +308,34 @@ const Admin = () => {
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('orders').update({ status: newStatus }).eq('id', orderId)
-        : await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Order updated",
-        description: `Order status changed to ${newStatus}`,
+      const res = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
       });
-      
+      if (!res.ok) throw new Error((await res.json()).message || 'Update failed');
+      toast({ title: "Order updated", description: `Order status changed to ${newStatus}` });
       fetchOrders();
     } catch (error: any) {
-      toast({
-        title: "Update failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
     }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
     if (!confirm('Are you sure you want to delete this order?')) return;
-    
     try {
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('orders').delete().eq('id', orderId)
-        : await supabase.from('orders').delete().eq('id', orderId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Order deleted",
-        description: "Order has been removed successfully",
-      });
-      
+      const res = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).message || 'Delete failed');
+      toast({ title: "Order deleted", description: "Order has been removed successfully" });
       fetchOrders();
       fetchStats();
     } catch (error: any) {
-      toast({
-        title: "Delete failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
     }
   };
 
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       const productData: any = {
         name: productForm.product_name,
@@ -422,101 +349,35 @@ const Admin = () => {
         tags: productForm.tags,
         discount_percentage: productForm.discount_percentage ?? 0,
         image_url: productForm.images[0] || null,
-        image_file_path: productForm.images.join(',') // Store all images as comma-separated
+        image_file_path: productForm.images.join(',')
       };
 
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      let result;
-      
-      if (editingProduct) {
-        // Update existing product
-        result = adminClient 
-          ? await adminClient.from('products').update(productData).eq('id', editingProduct)
-          : await supabase.from('products').update(productData).eq('id', editingProduct);
-      } else {
-        // Insert new product
-        result = adminClient 
-          ? await adminClient.from('products').insert([productData])
-          : await supabase.from('products').insert([productData]);
-      }
-
-      if (result.error) {
-        console.error('Database error:', result.error);
-        throw new Error(result.error.message || 'Failed to save product');
-      }
-
-      toast({
-        title: editingProduct ? "Product updated!" : "Product created!",
-        description: "Changes have been saved and synced across all pages.",
+      const url = editingProduct ? `/api/products/${editingProduct}` : '/api/products';
+      const method = editingProduct ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData),
       });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to save product');
 
+      toast({ title: editingProduct ? "Product updated!" : "Product created!", description: "Changes saved successfully." });
       resetForm();
-      // Refresh products list
       fetchProducts();
-      // Products will auto-refresh via real-time subscription
     } catch (error: any) {
-      console.error('Error saving product:', error);
-      toast({
-        title: "Error saving product",
-        description: error.message || "Please check your input and try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error saving product", description: error.message || "Please check your input.", variant: "destructive" });
     }
   };
 
   const deleteProduct = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
     try {
-      // First check if this product has orders
-      const adminClient = getAdminClient();
-      const { data: ordersWithProduct, error: checkError } = adminClient
-        ? await adminClient.from("orders").select("id").eq("product_id", id).limit(1)
-        : await supabase.from("orders").select("id").eq("product_id", id).limit(1);
-
-      if (checkError) {
-        console.error('Error checking orders:', checkError);
-      }
-
-      // Customize confirmation message based on whether product has orders
-      const hasOrders = ordersWithProduct && ordersWithProduct.length > 0;
-      const confirmMessage = hasOrders
-        ? 'This product has existing orders. The product will be deleted but order history will be preserved. Continue?'
-        : 'Are you sure you want to delete this product? This action cannot be undone.';
-      
-      if (!confirm(confirmMessage)) {
-        return;
-      }
-
-      // Delete the product (orders will have product_id set to NULL due to foreign key constraint)
-      const { error, data } = adminClient
-        ? await adminClient.from('products').delete().eq('id', id).select()
-        : await supabase.from('products').delete().eq('id', id).select();
-
-      if (error) {
-        console.error('Delete error:', error);
-        throw new Error(error.message);
-      }
-
-      console.log('Delete successful, affected rows:', data);
-      
-      toast({
-        title: "Product deleted",
-        description: hasOrders 
-          ? "Product removed successfully. Order history preserved."
-          : "Product has been removed and synced across all pages.",
-      });
-
-      // Refresh the product list to reflect the deletion
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to delete product');
+      toast({ title: "Product deleted", description: "Product has been removed successfully." });
       fetchProducts();
-      
-      // Products will auto-refresh via real-time subscription as well
     } catch (error: any) {
-      console.error('Error deleting product:', error);
-      toast({
-        title: "Error deleting product",
-        description: error.message || "Failed to delete product.",
-        variant: "destructive",
-      });
+      toast({ title: "Error deleting product", description: error.message || "Failed to delete product.", variant: "destructive" });
     }
   };
 
@@ -583,13 +444,9 @@ const Admin = () => {
 
   const fetchSaleBanners = async () => {
     try {
-      const { data, error } = await supabase
-        .from('sale_banners')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setSaleBanners(data || []);
+      const res = await fetch('/api/banners');
+      const data = await res.json();
+      setSaleBanners(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching sale banners:', error);
     }
@@ -597,93 +454,41 @@ const Admin = () => {
 
   const handleBannerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('sale_banners').insert([bannerForm])
-        : await supabase.from('sale_banners').insert([bannerForm]);
-
-      if (error) {
-        console.error('Banner error:', error);
-        throw new Error(error.message);
-      }
-
-      toast({
-        title: "Banner created!",
-        description: "Sale banner has been added and is now live.",
+      const res = await fetch('/api/banners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bannerForm),
       });
-
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to create banner');
+      toast({ title: "Banner created!", description: "Sale banner has been added and is now live." });
       setBannerForm({ message: "", is_active: true });
-      // Banners will auto-refresh via real-time subscription
+      fetchSaleBanners();
     } catch (error: any) {
-      console.error('Error creating banner:', error);
-      toast({
-        title: "Error creating banner",
-        description: error.message || "Failed to create banner. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error creating banner", description: error.message || "Failed to create banner.", variant: "destructive" });
     }
   };
 
   const toggleBannerStatus = async (id: string, currentStatus: boolean) => {
     try {
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('sale_banners').update({ is_active: !currentStatus }).eq('id', id)
-        : await supabase.from('sale_banners').update({ is_active: !currentStatus }).eq('id', id);
-
-      if (error) {
-        console.error('Toggle banner error:', error);
-        throw new Error(error.message);
-      }
-
-      toast({
-        title: "Banner updated!",
-        description: `Banner is now ${!currentStatus ? 'active' : 'inactive'}.`,
-      });
-
-      // Banners will auto-refresh via real-time subscription
+      const res = await fetch(`/api/banners/${id}/toggle`, { method: 'PATCH' });
+      if (!res.ok) throw new Error((await res.json()).message || 'Update failed');
+      toast({ title: "Banner updated!", description: `Banner is now ${!currentStatus ? 'active' : 'inactive'}.` });
+      fetchSaleBanners();
     } catch (error: any) {
-      console.error('Error updating banner:', error);
-      toast({
-        title: "Error updating banner",
-        description: error.message || "Failed to update banner.",
-        variant: "destructive",
-      });
+      toast({ title: "Error updating banner", description: error.message || "Failed to update banner.", variant: "destructive" });
     }
   };
 
   const deleteBanner = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this banner? This action cannot be undone.")) {
-      return;
-    }
-
+    if (!confirm("Are you sure you want to delete this banner?")) return;
     try {
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('sale_banners').delete().eq('id', id)
-        : await supabase.from('sale_banners').delete().eq('id', id);
-
-      if (error) {
-        console.error('Delete banner error:', error);
-        throw new Error(error.message);
-      }
-
-      toast({
-        title: "Banner deleted!",
-        description: "Banner has been permanently removed.",
-      });
-      // Banners will auto-refresh via real-time subscription
+      const res = await fetch(`/api/banners/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).message || 'Delete failed');
+      toast({ title: "Banner deleted!", description: "Banner has been permanently removed." });
+      fetchSaleBanners();
     } catch (error: any) {
-      console.error('Error deleting banner:', error);
-      toast({
-        title: "Error deleting banner",
-        description: error.message || "Failed to delete banner.",
-        variant: "destructive",
-      });
+      toast({ title: "Error deleting banner", description: error.message || "Failed to delete banner.", variant: "destructive" });
     }
   };
 

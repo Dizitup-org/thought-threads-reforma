@@ -18,8 +18,13 @@ export async function initializeDatabase() {
       );
     `);
 
-    const adminEmail = 'admin@gmail.com';
-    const adminPass  = '12345678'; // ⚠️ plain-text; hash with bcrypt in production
+    const adminEmail = process.env.ADMIN_ID;
+    const adminPass  = process.env.ADMIN_PASS;
+
+    if (!adminEmail || !adminPass) {
+      console.warn('⚠️  ADMIN_ID or ADMIN_PASS not set in .env — skipping admin seed');
+      return;
+    }
 
     const { rows } = await pool.query(
       'SELECT id FROM admin_users WHERE email = $1',
@@ -48,34 +53,33 @@ export async function initializeDatabase() {
 router.post('/admin-login', async (req: Request, res: Response) => {
   const { email, password } = req.body as { email: string; password: string };
 
-  try {
-    const { rows } = await pool.query(
-      'SELECT * FROM admin_users WHERE email = $1 AND password = $2',
-      [email, password],
-    );
+  const adminEmail = process.env.ADMIN_ID;
+  const adminPass  = process.env.ADMIN_PASS;
 
-    if (rows.length > 0) {
-      res.cookie('auth_session', email, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
-      res.cookie('auth_role', 'admin', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
-      return res.status(200).json({
-        message: 'Login successful',
-        isAdmin: true,
-        user: { email: rows[0].email },
-      });
-    }
-
-    return res.status(401).json({ message: 'Invalid admin credentials' });
-  } catch (err: any) {
-    return res.status(500).json({ message: 'Internal server error', details: err.message });
+  if (!adminEmail || !adminPass) {
+    return res.status(500).json({ message: 'Admin credentials not configured on server' });
   }
+
+  // Compare directly against the .env credentials
+  if (email === adminEmail && password === adminPass) {
+    res.cookie('auth_session', email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+    res.cookie('auth_role', 'admin', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+    return res.status(200).json({
+      message: 'Login successful',
+      isAdmin: true,
+      user: { email },
+    });
+  }
+
+  return res.status(401).json({ message: 'Invalid admin credentials' });
 });
 
 // ── POST /api/auth/login (regular user) ─────────────────────────────────────
@@ -188,6 +192,14 @@ router.get('/me', async (req: Request, res: Response) => {
     return res.status(401).json({ message: 'Not authenticated' });
   }
 
+  // Admins are NOT stored in the users table — return their session info directly.
+  if (userRole === 'admin') {
+    return res.status(200).json({
+      user: { email: userEmail, name: 'Admin' },
+      isAdmin: true,
+    });
+  }
+
   try {
     const { rows } = await pool.query(
       'SELECT id, name, email, phone, avatar_url, username, created_at FROM users WHERE email = $1',
@@ -203,7 +215,7 @@ router.get('/me', async (req: Request, res: Response) => {
 
     return res.status(200).json({
       user: rows[0],
-      isAdmin: userRole === 'admin',
+      isAdmin: false,
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
