@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { supabase, getAdminClient } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,35 +21,34 @@ const StorageTest = () => {
       const fileName = `test-${Date.now()}.txt`;
       const filePath = `test/${fileName}`;
       
-      // Try to upload file using admin client for full permissions
-      const adminClient = getAdminClient();
-      const { data: uploadData, error: uploadError } = adminClient
-        ? await adminClient.storage.from('images').upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          })
-        : await supabase.storage.from('images').upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+      // Try to upload file using simple fetch pointing to a backend endpoint
+      const formData = new FormData();
+      formData.append('file', file, fileName);
+      formData.append('path', filePath);
       
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        setUploadStatus(`Upload failed: ${uploadError.message}`);
+      const response = await fetch('/api/storage/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || 'Upload failed';
+        console.error('Upload error:', errorMessage);
+        setUploadStatus(`Upload failed: ${errorMessage}`);
         toast({
           title: "Upload failed",
-          description: uploadError.message,
+          description: errorMessage,
           variant: "destructive",
         });
         return;
       }
+
+      const uploadData = await response.json();
       
       setUploadStatus(`Upload successful! File path: ${uploadData.path}`);
       
-      // Get public URL
-      const { data: { publicUrl } } = adminClient
-        ? adminClient.storage.from('images').getPublicUrl(filePath)
-        : supabase.storage.from('images').getPublicUrl(filePath);
+      const publicUrl = uploadData.publicUrl || `/api/storage/${filePath}`;
       
       setUploadStatus(`Upload successful! Public URL: ${publicUrl}`);
       

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const AdminTest = () => {
@@ -20,11 +19,9 @@ const AdminTest = () => {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*');
-      
-      if (error) throw error;
+      const response = await fetch('/api/admin/products');
+      if (!response.ok) throw new Error('Failed to fetch products');
+      const data = await response.json();
       setProducts(data || []);
     } catch (error: any) {
       console.error('Error fetching products:', error);
@@ -38,12 +35,15 @@ const AdminTest = () => {
 
   const createTestProduct = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .insert([testProduct])
-        .select();
-      
-      if (error) throw error;
+      const response = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testProduct)
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to create product');
+      }
       
       toast({
         title: "Product created",
@@ -63,12 +63,13 @@ const AdminTest = () => {
 
   const deleteProduct = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      const response = await fetch(`/api/admin/products/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete product');
+      }
       
       toast({
         title: "Product deleted",

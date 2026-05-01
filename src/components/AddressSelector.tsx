@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,13 +42,9 @@ export default function AddressSelector({ isOpen, onClose, onAddressSelected, us
 
   const fetchAddresses = async () => {
     try {
-      const { data, error } = await supabase
-        .from('addresses')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const response = await fetch('/api/addresses');
+      if (!response.ok) throw new Error('Failed to fetch addresses');
+      const data = await response.json();
       setAddresses(data || []);
     } catch (error) {
       console.error('Error fetching addresses:', error);
@@ -58,13 +53,14 @@ export default function AddressSelector({ isOpen, onClose, onAddressSelected, us
 
   const saveNewAddress = async () => {
     try {
-      const { data, error } = await supabase
-        .from('addresses')
-        .insert([{ ...newAddress, user_id: userId }])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const response = await fetch('/api/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newAddress, user_id: userId })
+      });
+      
+      if (!response.ok) throw new Error('Failed to save address');
+      const data = await response.json();
 
       toast({ title: "Address added successfully!" });
       setAddresses([data, ...addresses]);

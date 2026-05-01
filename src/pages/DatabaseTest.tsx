@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function DatabaseTest() {
   const [products, setProducts] = useState<any[]>([]);
@@ -8,17 +7,13 @@ export default function DatabaseTest() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .limit(1);
-        
-        if (error) {
-          console.error('Error:', error);
-        } else {
-          console.log('Products data:', data);
-          setProducts(data || []);
+        const response = await fetch('/api/database-test/products');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
+        const data = await response.json();
+        console.log('Products data:', data);
+        setProducts(data || []);
       } catch (error) {
         console.error('Exception:', error);
       } finally {

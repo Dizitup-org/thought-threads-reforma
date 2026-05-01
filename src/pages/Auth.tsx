@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase, getAdminClient } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,27 +21,18 @@ export default function Auth() {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check if admin using admin client to bypass RLS restrictions
-        const adminClient = getAdminClient();
-        const { data: admin } = adminClient
-          ? await adminClient
-              .from('admin_users')
-              .select('*')
-              .eq('email', session.user.email)
-              .single()
-          : await supabase
-              .from('admin_users')
-              .select('*')
-              .eq('email', session.user.email)
-              .single();
-        
-        if (admin) {
-          navigate('/admin');
-        } else {
-          navigate('/profile');
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const sessionData = await response.json();
+          if (sessionData.isAdmin) {
+            navigate('/admin');
+          } else {
+            navigate('/profile');
+          }
         }
+      } catch (error) {
+        console.error("Auth check failed", error);
       }
     };
     checkUser();
@@ -61,92 +51,44 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+        const url = isAdminLogin ? '/api/auth/admin-login' : '/api/auth/login';
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
         });
         
-        if (error) throw error;
-        
-        // Check if admin user using admin client to bypass RLS restrictions
-        const adminClient = getAdminClient();
-        const { data: admin } = adminClient
-          ? await adminClient
-              .from('admin_users')
-              .select('*')
-              .eq('email', data.user?.email)
-              .single()
-          : await supabase
-              .from('admin_users')
-              .select('*')
-              .eq('email', data.user?.email)
-              .single();
-        
-        if (isAdminLogin && !admin) {
-          // Not an admin user
-          await supabase.auth.signOut();
-          throw new Error('Admin access required');
+        if (!response.ok) {
+           const errData = await response.json().catch(() => ({}));
+           throw new Error(errData.message || 'Login failed');
         }
+        const data = await response.json();
         
         toast({
           title: "Welcome back!",
           description: "You have successfully logged in.",
         });
         
-        if (admin) {
+        if (data.isAdmin) {
           navigate('/admin');
         } else {
-          // Create user profile if it doesn't exist
-          const { data: existingProfile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('auth_user_id', data.user?.id)
-            .single();
-          
-          if (!existingProfile) {
-            await supabase
-              .from('users')
-              .insert([
-                {
-                  auth_user_id: data.user?.id,
-                  email: data.user?.email,
-                  name: data.user?.user_metadata?.full_name || name,
-                }
-              ]);
-          }
-          
           navigate('/profile');
         }
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/profile`,
-            data: {
-              full_name: name,
-            }
-          }
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name })
         });
         
-        if (error) throw error;
-        
-        // Create user profile
-        if (data.user) {
-          await supabase
-            .from('users')
-            .insert([
-              {
-                auth_user_id: data.user.id,
-                email: data.user.email,
-                name: name,
-              }
-            ]);
+        if (!response.ok) {
+           const errData = await response.json().catch(() => ({}));
+           throw new Error(errData.message || 'Sign up failed');
         }
         
         toast({
           title: "Account created!",
-          description: "Please check your email to confirm your account.",
+          description: "You have successfully signed up. You can now log in.",
         });
         
         // Switch to login form

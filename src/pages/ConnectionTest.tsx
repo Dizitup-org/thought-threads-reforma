@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase, getAdminClient } from "@/integrations/supabase/client";
 
 const ConnectionTest = () => {
   const [connectionStatus, setConnectionStatus] = useState<string>("Checking...");
@@ -9,16 +8,11 @@ const ConnectionTest = () => {
     // Test regular connection
     const testConnection = async () => {
       try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('id')
-          .limit(1);
-        
-        if (error) {
-          setConnectionStatus(`Error: ${error.message}`);
-        } else {
-          setConnectionStatus("Connected successfully with regular client");
+        const response = await fetch('/api/connection-test/regular');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+        setConnectionStatus("Connected successfully with API");
       } catch (error: any) {
         setConnectionStatus(`Exception: ${error.message}`);
       }
@@ -27,20 +21,15 @@ const ConnectionTest = () => {
     // Test admin connection
     const testAdminConnection = async () => {
       try {
-        const adminClient = getAdminClient();
-        if (adminClient) {
-          const { data, error } = await adminClient
-            .from('products')
-            .select('id')
-            .limit(1);
-          
-          if (error) {
-            setAdminConnectionStatus(`Error: ${error.message}`);
+        const response = await fetch('/api/connection-test/admin');
+        if (!response.ok) {
+          if (response.status === 404 || response.status === 401 || response.status === 403) {
+            setAdminConnectionStatus("Admin API endpoint not available or unauthorized");
           } else {
-            setAdminConnectionStatus("Connected successfully with admin client");
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
         } else {
-          setAdminConnectionStatus("Admin client not available");
+          setAdminConnectionStatus("Connected successfully with Admin API");
         }
       } catch (error: any) {
         setAdminConnectionStatus(`Exception: ${error.message}`);
@@ -56,19 +45,19 @@ const ConnectionTest = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="serif-heading text-4xl font-bold text-reforma-brown mb-2">Connection Test</h1>
-          <p className="text-muted-foreground">Testing Supabase connections</p>
+          <p className="text-muted-foreground">Testing Backend & Database API connections</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="border border-border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Regular Client Connection</h2>
+            <h2 className="text-xl font-semibold mb-4">Regular API Connection</h2>
             <p className={connectionStatus.includes("successfully") ? "text-green-600" : "text-red-600"}>
               {connectionStatus}
             </p>
           </div>
           
           <div className="border border-border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Admin Client Connection</h2>
+            <h2 className="text-xl font-semibold mb-4">Admin API Connection</h2>
             <p className={adminConnectionStatus.includes("successfully") ? "text-green-600" : "text-red-600"}>
               {adminConnectionStatus}
             </p>

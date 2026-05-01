@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface SaleBanner {
   id: string;
@@ -16,14 +15,13 @@ const SaleBanner = () => {
 
   const fetchBanners = async () => {
     try {
-      const { data, error } = await supabase
-        .from('sale_banners')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const response = await fetch('/api/banners');
+      if (!response.ok) throw new Error('Failed to fetch banners');
       
-      if (error) throw error;
-      setBanners(data || []);
+      const data: SaleBanner[] = await response.json();
+      // Filter for active banners as the backend returns all banners
+      const activeBanners = data.filter(banner => banner.is_active);
+      setBanners(activeBanners);
     } catch (error) {
       console.error('Error fetching banners:', error);
     }
