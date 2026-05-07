@@ -13,6 +13,7 @@ import usersRouter from './routes/users.js';
 import addressesRouter from './routes/addresses.js';
 import settingsRouter from './routes/settings.js';
 import reviewsRouter from './routes/reviews.js';
+import uploadRouter from './routes/upload.js';
 
 // ── Environment ──────────────────────────────────────────────────────────────
 dotenv.config();
@@ -33,8 +34,8 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (curl, Postman, mobile) or whitelisted origins
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      // In development, allow all origins or specifically the ones we know
+      if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.includes('192.168.')) {
         callback(null, true);
       } else {
         callback(new Error(`CORS: Origin ${origin} not allowed`));
@@ -55,15 +56,20 @@ app.use('/api/users',       usersRouter);
 app.use('/api/addresses',   addressesRouter);
 app.use('/api/settings',    settingsRouter);
 app.use('/api/reviews',     reviewsRouter);
+app.use('/api/upload',      uploadRouter);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ── 404 handler ───────────────────────────────────────────────────────────────
-app.use((_req, res) => {
-  res.status(404).json({ message: 'Route not found' });
+// ── Error handler ────────────────────────────────────────────────────────────
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Catch-all Error:', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err : {},
+  });
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

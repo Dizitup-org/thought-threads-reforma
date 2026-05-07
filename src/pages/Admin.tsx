@@ -492,7 +492,7 @@ const Admin = () => {
     }
   };
 
-  // Enhanced image upload function with better error handling
+  // Enhanced image upload function with Cloudinary backend
   const handleImageUpload = async (file: File) => {
     try {
       // Validate file type
@@ -506,77 +506,21 @@ const Admin = () => {
         throw new Error('Image size must be less than 5MB');
       }
       
-      // Generate unique file name
-      const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `products/${fileName}`;
-      
-      // Check if images bucket exists, create it if not
-      try {
-        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-        if (bucketError) {
-          console.warn('Error listing buckets:', bucketError);
-        } else {
-          const imagesBucket = buckets?.find(bucket => bucket.name === 'images');
-          
-          if (!imagesBucket) {
-            // Try to create the bucket
-            const { error: createError } = await supabase.storage.createBucket('images', {
-              public: true
-            });
-            
-            if (createError) {
-              console.warn('Could not create images bucket:', createError);
-            } else {
-              console.log('Successfully created images bucket');
-            }
-          }
-        }
-      } catch (bucketError) {
-        console.warn('Error checking/creating images bucket:', bucketError);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Upload failed');
       }
-      
-      // Try to upload file using admin client for full permissions
-      const adminClient = getAdminClient();
-      const { data: uploadData, error: uploadError } = adminClient
-        ? await adminClient.storage.from('images').upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: file.type
-          })
-        : await supabase.storage.from('images').upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: file.type
-          });
-      
-      // Handle upload errors gracefully
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        
-        // If it's a bucket not found error, provide specific instructions
-        if (uploadError.message.includes('Bucket not found')) {
-          throw new Error('Storage bucket "images" not found. Please create an "images" bucket in your Supabase Storage dashboard and set it as public.');
-        }
-        
-        // If it's a storage permission error, provide a more helpful message
-        if (uploadError.message.includes('row-level security') || uploadError.message.includes('permission')) {
-          throw new Error('Storage permission error. Please ensure the "images" bucket exists and has proper permissions configured in Supabase Storage.');
-        }
-        
-        throw new Error(`Upload failed: ${uploadError.message}`);
-      }
-      
-      // Get public URL
-      const { data: { publicUrl } } = adminClient
-        ? adminClient.storage.from('images').getPublicUrl(filePath)
-        : supabase.storage.from('images').getPublicUrl(filePath);
-      
-      if (!publicUrl) {
-        throw new Error('Failed to get public URL for uploaded image');
-      }
-      
-      return publicUrl;
+
+      const data = await response.json();
+      return data.url; // Returns the secure Cloudinary URL
     } catch (error: any) {
       console.error('Image upload error:', error);
       throw error;

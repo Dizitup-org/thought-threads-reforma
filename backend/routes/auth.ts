@@ -51,35 +51,49 @@ export async function initializeDatabase() {
 
 // ── POST /api/auth/admin-login ───────────────────────────────────────────────
 router.post('/admin-login', async (req: Request, res: Response) => {
-  const { email, password } = req.body as { email: string; password: string };
+  try {
+    if (!req.body) {
+      return res.status(400).json({ message: 'Request body is missing' });
+    }
 
-  const adminEmail = process.env.ADMIN_ID;
-  const adminPass  = process.env.ADMIN_PASS;
+    const { email, password } = req.body as { email: string; password: string };
 
-  if (!adminEmail || !adminPass) {
-    return res.status(500).json({ message: 'Admin credentials not configured on server' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    const adminEmail = process.env.ADMIN_ID;
+    const adminPass  = process.env.ADMIN_PASS;
+
+    if (!adminEmail || !adminPass) {
+      console.error('❌ ADMIN_ID or ADMIN_PASS not set in environment variables');
+      return res.status(500).json({ message: 'Admin credentials not configured on server' });
+    }
+
+    // Compare directly against the .env credentials
+    if (email === adminEmail && password === adminPass) {
+      res.cookie('auth_session', email, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
+      res.cookie('auth_role', 'admin', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
+      return res.status(200).json({
+        message: 'Login successful',
+        isAdmin: true,
+        user: { email },
+      });
+    }
+
+    return res.status(401).json({ message: 'Invalid admin credentials' });
+  } catch (err: any) {
+    console.error('Admin login error:', err);
+    return res.status(500).json({ message: 'Internal server error', details: err.message });
   }
-
-  // Compare directly against the .env credentials
-  if (email === adminEmail && password === adminPass) {
-    res.cookie('auth_session', email, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
-    res.cookie('auth_role', 'admin', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
-    return res.status(200).json({
-      message: 'Login successful',
-      isAdmin: true,
-      user: { email },
-    });
-  }
-
-  return res.status(401).json({ message: 'Invalid admin credentials' });
 });
 
 // ── POST /api/auth/login (regular user) ─────────────────────────────────────
