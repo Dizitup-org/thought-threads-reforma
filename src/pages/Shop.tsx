@@ -54,25 +54,6 @@ const Shop = () => {
   useEffect(() => {
     fetchProducts();
     fetchCollections();
-    
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('products-shop-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'products'
-      }, (payload) => {
-        console.log('Shop page: Real-time product change detected:', payload);
-        fetchProducts();
-      })
-      .subscribe((status) => {
-        console.log('Shop page: Products channel status:', status);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   useEffect(() => {
@@ -100,6 +81,9 @@ const Shop = () => {
       setAllGsms(uniqueGsms);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
+      setTags([]);
+      setAllGsms([]);
     }
   };
 
@@ -113,6 +97,7 @@ const Shop = () => {
       setCollections(data?.map(c => c.name) || []);
     } catch (error) {
       console.error('Error fetching collections:', error);
+      setCollections([]);
     }
   };
 

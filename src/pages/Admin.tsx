@@ -146,76 +146,7 @@ const Admin = () => {
     fetchEmailSignups();
     fetchUsers();
     
-    // Set up real-time subscriptions for all tables
-    const productsChannel = supabase
-      .channel('products-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'products'
-      }, (payload) => {
-        console.log('Admin: Real-time product change detected:', payload);
-        fetchProducts();
-        fetchStats();
-      })
-      .subscribe((status) => {
-        console.log('Admin: Products channel status:', status);
-      });
-
-    const bannersChannel = supabase
-      .channel('banners-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'sale_banners'
-      }, () => {
-        fetchSaleBanners();
-      })
-      .subscribe();
-
-    const ordersChannel = supabase
-      .channel('orders-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'orders'
-      }, () => {
-        fetchStats();
-        fetchOrders();
-      })
-      .subscribe();
-
-    const emailsChannel = supabase
-      .channel('emails-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'email_signups'
-      }, () => {
-        fetchStats();
-        fetchEmailSignups();
-      })
-      .subscribe();
-
-    const usersChannel = supabase
-      .channel('users-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'users'
-      }, () => {
-        fetchStats();
-        fetchUsers();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(productsChannel);
-      supabase.removeChannel(bannersChannel);
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(emailsChannel);
-      supabase.removeChannel(usersChannel);
-    };
+    // Real-time subscriptions removed - using simple data refresh pattern
   }, []);
 
   const fetchProducts = async () => {
@@ -238,6 +169,7 @@ const Admin = () => {
       setProducts(data as Product[] || []);
     } catch (error: any) {
       console.error('Error fetching products:', error);
+      setProducts([]);
       toast({
         title: "Error",
         description: error.message || "Failed to load products",
@@ -256,6 +188,7 @@ const Admin = () => {
       setCollections(data?.map(c => c.name) || []);
     } catch (error) {
       console.error('Error fetching collections:', error);
+      setCollections([]);
     }
   };
 
@@ -276,6 +209,12 @@ const Admin = () => {
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
+      setStats({
+        totalProducts: 0,
+        totalOrders: 0,
+        emailSignups: 0,
+        totalUsers: 0
+      });
     }
   };
 
@@ -290,6 +229,7 @@ const Admin = () => {
       setOrders(data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      setOrders([]);
     }
   };
 
@@ -304,6 +244,7 @@ const Admin = () => {
       setEmailSignups(data || []);
     } catch (error) {
       console.error('Error fetching email signups:', error);
+      setEmailSignups([]);
     }
   };
 
@@ -318,6 +259,7 @@ const Admin = () => {
       setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
     }
   };
 
@@ -560,6 +502,7 @@ const Admin = () => {
       setSaleBanners(data || []);
     } catch (error) {
       console.error('Error fetching sale banners:', error);
+      setSaleBanners([]);
     }
   };
 

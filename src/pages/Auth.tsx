@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase, getAdminClient } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff } from 'lucide-react';
+
+const API_URL = 'http://localhost:3000';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,34 +21,13 @@ export default function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check if admin using admin client to bypass RLS restrictions
-        const adminClient = getAdminClient();
-        const { data: admin } = adminClient
-          ? await adminClient
-              .from('admin_users')
-              .select('*')
-              .eq('email', session.user.email)
-              .single()
-          : await supabase
-              .from('admin_users')
-              .select('*')
-              .eq('email', session.user.email)
-              .single();
-        
-        if (admin) {
-          navigate('/admin');
-        } else {
-          navigate('/profile');
-        }
-      }
-    };
-    checkUser();
-    
-    // Check if admin login was requested
+    // Check if already logged in via sessionStorage
+    const adminData = sessionStorage.getItem('reforma_admin');
+    const userData = sessionStorage.getItem('reforma_user');
+    if (adminData) { navigate('/admin'); return; }
+    if (userData) { navigate('/profile'); return; }
+
+    // Check if admin login was requested via URL param
     const params = new URLSearchParams(location.search);
     if (params.get('admin') === 'true') {
       setIsAdminLogin(true);
@@ -60,103 +40,67 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+      if (isAdminLogin) {
+        // ── Admin login against admin_users table ────────────────────────────
+        const res = await fetch(`${API_URL}/api/admin-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
         });
-        
-        if (error) throw error;
-        
-        // Check if admin user using admin client to bypass RLS restrictions
-        const adminClient = getAdminClient();
-        const { data: admin } = adminClient
-          ? await adminClient
-              .from('admin_users')
-              .select('*')
-              .eq('email', data.user?.email)
-              .single()
-          : await supabase
-              .from('admin_users')
-              .select('*')
-              .eq('email', data.user?.email)
-              .single();
-        
-        if (isAdminLogin && !admin) {
-          // Not an admin user
-          await supabase.auth.signOut();
-          throw new Error('Admin access required');
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Admin login failed');
         }
-        
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully logged in.",
+
+        sessionStorage.setItem('reforma_admin', JSON.stringify(data.admin));
+        toast({ title: 'Welcome, Admin!', description: 'Redirecting to dashboard...' });
+        navigate('/admin');
+
+      } else if (isLogin) {
+        // ── Regular user login ───────────────────────────────────────────────
+        const res = await fetch(`${API_URL}/api/user-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
         });
-        
-        if (admin) {
-          navigate('/admin');
-        } else {
-          // Create user profile if it doesn't exist
-          const { data: existingProfile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('auth_user_id', data.user?.id)
-            .single();
-          
-          if (!existingProfile) {
-            await supabase
-              .from('users')
-              .insert([
-                {
-                  auth_user_id: data.user?.id,
-                  email: data.user?.email,
-                  name: data.user?.user_metadata?.full_name || name,
-                }
-              ]);
-          }
-          
-          navigate('/profile');
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Login failed');
         }
+
+        sessionStorage.setItem('reforma_user', JSON.stringify(data.user));
+        toast({ title: 'Welcome back!', description: 'You have successfully logged in.' });
+        navigate('/profile');
+
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/profile`,
-            data: {
-              full_name: name,
-            }
-          }
+        // ── Registration ─────────────────────────────────────────────────────
+        const res = await fetch(`${API_URL}/api/user-register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name }),
         });
-        
-        if (error) throw error;
-        
-        // Create user profile
-        if (data.user) {
-          await supabase
-            .from('users')
-            .insert([
-              {
-                auth_user_id: data.user.id,
-                email: data.user.email,
-                name: name,
-              }
-            ]);
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Registration failed');
         }
-        
+
         toast({
-          title: "Account created!",
-          description: "Please check your email to confirm your account.",
+          title: 'Account created!',
+          description: 'You can now sign in with your credentials.',
         });
-        
-        // Switch to login form
         setIsLogin(true);
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "An error occurred during authentication",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'An error occurred during authentication',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);

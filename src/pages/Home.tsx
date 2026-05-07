@@ -37,26 +37,6 @@ const Home = () => {
   useEffect(() => {
     fetchFeaturedProducts();
     fetchLatestProducts();
-    
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('products-home-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'products'
-      }, (payload) => {
-        console.log('Home page: Real-time product change detected:', payload);
-        fetchFeaturedProducts();
-        fetchLatestProducts();
-      })
-      .subscribe((status) => {
-        console.log('Home page: Products channel status:', status);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   useEffect(() => {
@@ -92,6 +72,7 @@ const Home = () => {
       setFeaturedProducts(data || []);
     } catch (error) {
       console.error('Error fetching featured products:', error);
+      setFeaturedProducts([]);
     }
   };
 
@@ -107,6 +88,7 @@ const Home = () => {
       setLatestProducts(data || []);
     } catch (error) {
       console.error('Error fetching latest products:', error);
+      setLatestProducts([]);
     }
   };
 

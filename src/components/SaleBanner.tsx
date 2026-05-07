@@ -26,6 +26,7 @@ const SaleBanner = () => {
       setBanners(data || []);
     } catch (error) {
       console.error('Error fetching banners:', error);
+      setBanners([]);
     }
   };
 
