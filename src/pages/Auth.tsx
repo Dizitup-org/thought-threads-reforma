@@ -21,6 +21,7 @@ export default function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
+<<<<<<< HEAD
     // Check if already logged in via sessionStorage
     const adminData = sessionStorage.getItem('reforma_admin');
     const userData = sessionStorage.getItem('reforma_user');
@@ -28,6 +29,27 @@ export default function Auth() {
     if (userData) { navigate('/profile'); return; }
 
     // Check if admin login was requested via URL param
+=======
+    // Check if user is already logged in
+    const checkUser = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const sessionData = await response.json();
+          if (sessionData.isAdmin) {
+            navigate('/admin');
+          } else {
+            navigate('/profile');
+          }
+        }
+      } catch (error) {
+        console.error("Auth check failed", error);
+      }
+    };
+    checkUser();
+    
+    // Check if admin login was requested
+>>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
     const params = new URLSearchParams(location.search);
     if (params.get('admin') === 'true') {
       setIsAdminLogin(true);
@@ -40,6 +62,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
+<<<<<<< HEAD
       if (isAdminLogin) {
         // ── Admin login against admin_users table ────────────────────────────
         const res = await fetch(`${API_URL}/api/admin-login`, {
@@ -70,6 +93,31 @@ export default function Auth() {
 
         if (!res.ok) {
           throw new Error(data.error || 'Login failed');
+=======
+      if (isLogin) {
+        const url = isAdminLogin ? '/api/auth/admin-login' : '/api/auth/login';
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        if (!response.ok) {
+           const errData = await response.json().catch(() => ({}));
+           throw new Error(errData.message || 'Login failed');
+        }
+        const data = await response.json();
+        
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
+        });
+        
+        if (data.isAdmin) {
+          navigate('/admin');
+        } else {
+          navigate('/profile');
+>>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
         }
 
         sessionStorage.setItem('reforma_user', JSON.stringify(data.user));
@@ -77,6 +125,7 @@ export default function Auth() {
         navigate('/profile');
 
       } else {
+<<<<<<< HEAD
         // ── Registration ─────────────────────────────────────────────────────
         const res = await fetch(`${API_URL}/api/user-register`, {
           method: 'POST',
@@ -88,11 +137,27 @@ export default function Auth() {
 
         if (!res.ok) {
           throw new Error(data.error || 'Registration failed');
+=======
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name })
+        });
+        
+        if (!response.ok) {
+           const errData = await response.json().catch(() => ({}));
+           throw new Error(errData.message || 'Sign up failed');
+>>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
         }
 
         toast({
+<<<<<<< HEAD
           title: 'Account created!',
           description: 'You can now sign in with your credentials.',
+=======
+          title: "Account created!",
+          description: "You have successfully signed up. You can now log in.",
+>>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
         });
         setIsLogin(true);
       }

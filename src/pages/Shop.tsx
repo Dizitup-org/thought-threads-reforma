@@ -14,7 +14,6 @@ import {
 import { Search, Filter, Grid, List } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
@@ -62,22 +61,20 @@ const Shop = () => {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const response = await fetch('/api/products');
+      if (!response.ok) throw new Error('Failed to fetch products');
+      const data = await response.json();
       
-      if (error) throw error;
       setProducts(data || []);
       
       // Extract unique tags
-      const allTags = data?.flatMap(p => p.tags || []) || [];
-      const uniqueTags = [...new Set(allTags)];
+      const allTags = data?.flatMap((p: any) => p.tags || []) || [];
+      const uniqueTags = [...new Set(allTags)] as string[];
       setTags(uniqueTags);
       
       // Extract all GSM values
-      const allGsms = data?.flatMap(p => p.gsm || []) || [];
-      const uniqueGsms = [...new Set(allGsms)].sort((a, b) => a - b);
+      const allGsms = data?.flatMap((p: any) => p.gsm || []) || [];
+      const uniqueGsms = [...new Set(allGsms)].sort((a: any, b: any) => a - b) as number[];
       setAllGsms(uniqueGsms);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -89,12 +86,11 @@ const Shop = () => {
 
   const fetchCollections = async () => {
     try {
-      const { data, error } = await supabase
-        .from('collections')
-        .select('name');
+      const response = await fetch('/api/collections');
+      if (!response.ok) throw new Error('Failed to fetch collections');
+      const data = await response.json();
       
-      if (error) throw error;
-      setCollections(data?.map(c => c.name) || []);
+      setCollections(data?.map((c: any) => c.name) || []);
     } catch (error) {
       console.error('Error fetching collections:', error);
       setCollections([]);

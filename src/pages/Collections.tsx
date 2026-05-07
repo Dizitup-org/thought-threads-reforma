@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 interface Product {
@@ -34,28 +33,23 @@ const Collections = () => {
       setLoading(true);
       
       // Fetch all collections
-      const { data: collectionsData, error: collectionsError } = await supabase
-        .from('collections')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (collectionsError) throw collectionsError;
+      const collectionsRes = await fetch('/api/collections');
+      if (!collectionsRes.ok) throw new Error('Failed to fetch collections');
+      const collectionsData = await collectionsRes.json();
 
       // Fetch all products
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*');
-      
-      if (productsError) throw productsError;
+      const productsRes = await fetch('/api/products');
+      if (!productsRes.ok) throw new Error('Failed to fetch products');
+      const productsData = await productsRes.json();
 
       // Group products by collection
-      const collectionsWithProducts = (collectionsData || []).map(collection => ({
+      const collectionsWithProducts = (collectionsData || []).map((collection: any) => ({
         id: collection.id,
         name: collection.name,
         description: collection.description || '',
         products: (productsData || [])
-          .filter(p => p.collection === collection.name)
-          .map(p => ({
+          .filter((p: any) => p.collection === collection.name)
+          .map((p: any) => ({
             id: p.id,
             name: p.name,
             price: p.price,

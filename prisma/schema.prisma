@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_name String     @map("product_name") // or name depending on the latest migration
+  price        Decimal    @db.Decimal(10, 2)
+  images       String[]   @default([])
+  collection   String
+  stock        Int        @default(0)
+  sizes        String[]   @default([])
+  gsm_options  Int[]      @default([])
+  tags         String[]   @default([])
+  discount     Int?       @default(0)
+  description  String?
+  featured     Boolean    @default(false)
+  created_at   DateTime   @default(now()) @db.Timestamptz()
+  
+  orders       Order[]
+  carts        Cart[]
+  wishlists    Wishlist[]
+
+  @@map("products")
+}
+
+model Collection {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique
+  description String?
+  created_at  DateTime @default(now()) @db.Timestamptz()
+  updated_at  DateTime @default(now()) @db.Timestamptz()
+
+  @@map("collections")
+}
+
+model EmailSignup {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String   @unique
+  subscribed_at DateTime @default(now()) @db.Timestamptz()
+
+  @@map("email_signups")
+}
+
+model Order {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id     String?  @db.Uuid
+  product        Product? @relation(fields: [product_id], references: [id])
+  product_name   String
+  size           String
+  collection     String
+  customer_email String?
+  customer_phone String?
+  status         String   @default("pending")
+  created_at     DateTime @default(now()) @db.Timestamptz()
+
+  @@map("orders")
+}
+
+model AdminUser {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String    @unique
+  password_hash String
+  created_at    DateTime  @default(now()) @db.Timestamptz()
+  last_login    DateTime? @db.Timestamptz()
+
+  @@map("admin_users")
+}
+
+model SiteSetting {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  setting_key   String   @unique
+  setting_value String?
+  created_at    DateTime @default(now()) @db.Timestamptz()
+  updated_at    DateTime @default(now()) @db.Timestamptz()
+
+  @@map("site_settings")
+}
+
+model SaleBanner {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  message    String
+  is_active  Boolean? @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @default(now()) @db.Timestamptz()
+
+  @@map("sale_banners")
+}
+
+model User {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  auth_user_id String?    @db.Uuid // UUID of auth.users
+  name         String?
+  email        String?    @unique
+  password_hash String?
+  phone        String?
+  avatar_url   String?
+  username     String?    @unique
+  created_at   DateTime   @default(now()) @db.Timestamptz()
+  updated_at   DateTime   @default(now()) @db.Timestamptz()
+
+  addresses    Address[]
+  carts        Cart[]
+  wishlists    Wishlist[]
+
+  @@map("users")
+}
+
+model Address {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String?  @db.Uuid
+  user         User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  label        String?
+  address_line String?
+  city         String?
+  state        String?
+  pincode      String?
+  country      String?  @default("India")
+  is_default   Boolean? @default(false)
+  created_at   DateTime @default(now()) @db.Timestamptz()
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz()
+
+  @@map("addresses")
+}
+
+model Cart {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String?  @db.Uuid
+  user       User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product_id String?  @db.Uuid
+  product    Product? @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  quantity   Int      @default(1)
+  size       String
+  gsm        Int?
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz()
+
+  @@unique([user_id, product_id, size, gsm])
+  @@map("cart")
+}
+
+model GuestUser {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  email      String
+  phone      String?
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz()
+
+  @@map("guest_users")
+}
+
+model Wishlist {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product_id String   @db.Uuid
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  created_at DateTime @default(now()) @db.Timestamptz()
+
+  @@unique([user_id, product_id])
+  @@map("wishlist")
+}
+
+model Review {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  location    String?
+  rating      Int      @default(5)
+  comment     String
+  is_approved Boolean? @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz()
+
+  @@map("reviews")
+}

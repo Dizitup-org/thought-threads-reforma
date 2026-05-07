@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useCart } from "@/hooks/useCart";
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,14 +49,10 @@ const Cart = () => {
 
   const loadAdminSettings = async () => {
     try {
-      // Load admin settings from environment or database
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('setting_key, setting_value')
-        .in('setting_key', ['admin_phone', 'whatsapp_message_template']);
-      
-      if (!error && data) {
-        const phoneSetting = data.find(setting => setting.setting_key === 'admin_phone');
+      const response = await fetch('/api/settings');
+      if (response.ok) {
+        const data = await response.json();
+        const phoneSetting = data.find((setting: any) => setting.setting_key === 'admin_phone');
         if (phoneSetting) {
           setAdminPhoneNumber(phoneSetting.setting_value);
         }
@@ -68,15 +63,14 @@ const Cart = () => {
   };
 
   const checkAuthStatus = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: profile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('auth_user_id', session.user.id)
-        .single();
-      
-      setUser(profile);
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.error('Error checking auth:', error);
     }
   };
 
@@ -151,17 +145,18 @@ const Cart = () => {
           status: 'Pending'
         };
 
-        return supabase.from('orders').insert(orderData);
+        return fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        }).then(res => {
+          if (!res.ok) throw new Error('Order submission failed');
+          return res.json();
+        });
       });
 
       // Execute all order insertions (non-blocking)
       Promise.all(orderPromises)
-        .then(results => {
-          const errors = results.filter(result => result.error);
-          if (errors.length > 0) {
-            console.error('Some orders failed to save to database:', errors);
-          }
-        })
         .catch(error => {
           console.error('Error saving orders to database:', error);
         });

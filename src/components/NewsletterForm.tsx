@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 const NewsletterForm = () => {
   const [email, setEmail] = useState('');
@@ -33,27 +32,22 @@ const NewsletterForm = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('email_signups')
-        .insert([{ email }]);
+      const response = await fetch('/api/emails/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
 
-      if (error) {
-        // Check if email already exists
-        if (error.code === '23505') {
-          toast({
-            title: "Already subscribed",
-            description: "This email is already subscribed to our newsletter",
-          });
-        } else {
-          throw error;
-        }
-      } else {
-        toast({
-          title: "Successfully subscribed!",
-          description: "Welcome to the Thought Collective",
-        });
-        setEmail('');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Subscription failed');
       }
+
+      toast({
+        title: "Successfully subscribed!",
+        description: "Welcome to the Thought Collective",
+      });
+      setEmail('');
     } catch (error: any) {
       console.error('Newsletter signup error:', error);
       toast({

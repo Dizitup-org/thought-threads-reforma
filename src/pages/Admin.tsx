@@ -16,7 +16,37 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, Upload, Users, Package, Mail, Shield, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase, getAdminClient } from "@/integrations/supabase/client";
+
+// Global mock for Supabase to prevent the old functions from crashing the page
+// before their respective backend routes are connected.
+const supabase: any = {
+  auth: {
+    signOut: () => Promise.resolve(),
+    getSession: () => Promise.resolve({ data: { session: null } }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+  },
+  channel: () => ({
+    on: () => ({
+      subscribe: () => {}
+    }),
+    subscribe: () => {}
+  }),
+  removeChannel: () => {},
+  from: () => ({
+    select: () => Promise.resolve({ data: [], error: null }),
+    insert: () => Promise.resolve({ data: [], error: null }),
+    update: () => Promise.resolve({ data: [], error: null }),
+    delete: () => Promise.resolve({ data: [], error: null })
+  }),
+  storage: {
+    from: () => ({
+      upload: () => Promise.resolve({ data: {}, error: null }),
+      getPublicUrl: () => ({ data: { publicUrl: "" } })
+    }),
+    listBuckets: () => Promise.resolve({ data: [], error: null }),
+    createBucket: () => Promise.resolve({ error: null })
+  }
+};
 
 // Use a flexible type that can handle both old and new data structures
 interface Product {
@@ -67,26 +97,13 @@ const Admin = () => {
   // Database health check
   const checkDatabaseHealth = async () => {
     try {
-      // Test Supabase connection
-      const { data, error } = await supabase
-        .from('products')
-        .select('id')
-        .limit(1);
-      
-      if (error) {
-        setDbHealth({status: 'error', message: `Database error: ${error.message}`});
-        return false;
+      const res = await fetch('/api/health');
+      if (res.ok) {
+        setDbHealth({status: 'healthy', message: 'Backend API connected successfully'});
+        return true;
       }
-      
-      // Test storage connection
-      const { data: buckets, error: storageError } = await supabase.storage.listBuckets();
-      if (storageError) {
-        setDbHealth({status: 'error', message: `Storage error: ${storageError.message}`});
-        return false;
-      }
-      
-      setDbHealth({status: 'healthy', message: 'Database and storage connected successfully'});
-      return true;
+      setDbHealth({status: 'error', message: 'Backend API returned an error'});
+      return false;
     } catch (error: any) {
       setDbHealth({status: 'error', message: `Connection failed: ${error.message}`});
       return false;
@@ -96,37 +113,36 @@ const Admin = () => {
   // Check if current user is an admin
   useEffect(() => {
     const checkAdminStatus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        // Not logged in at all - redirect to admin login
+      try {
+        const response = await fetch('/api/auth/me');
+        if (!response.ok) {
+          // Not logged in at all
+          window.location.href = '/auth?admin=true';
+          return;
+        }
+        
+        const sessionData = await response.json();
+        
+        if (!sessionData.isAdmin) {
+          // Not an admin
+          await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin privileges. Please use regular user login.",
+            variant: "destructive",
+          });
+          setTimeout(() => {
+            window.location.href = '/auth';
+          }, 2000);
+          return;
+        }
+        
+        // Valid admin user
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error("Auth check failed", err);
         window.location.href = '/auth?admin=true';
-        return;
       }
-      
-      // Check if this user is in admin_users table
-      const { data: admin, error } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', session.user.email)
-        .single();
-      
-      if (error || !admin) {
-        // Not an admin - sign them out and redirect
-        await supabase.auth.signOut();
-        toast({
-          title: "Access Denied",
-          description: "You don't have admin privileges. Please use regular user login.",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = '/auth';
-        }, 2000);
-        return;
-      }
-      
-      // Valid admin user
-      setIsAuthenticated(true);
     };
     
     checkAdminStatus();
@@ -146,46 +162,109 @@ const Admin = () => {
     fetchEmailSignups();
     fetchUsers();
     
+<<<<<<< HEAD
     // Real-time subscriptions removed - using simple data refresh pattern
+=======
+    // Real-time subscriptions disabled until web sockets are implemented
+    /*
+    const productsChannel = supabase
+      .channel('products-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'products'
+      }, (payload) => {
+        console.log('Admin: Real-time product change detected:', payload);
+        fetchProducts();
+        fetchStats();
+      })
+      .subscribe((status) => {
+        console.log('Admin: Products channel status:', status);
+      });
+
+    const bannersChannel = supabase
+      .channel('banners-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sale_banners'
+      }, () => {
+        fetchSaleBanners();
+      })
+      .subscribe();
+
+    const ordersChannel = supabase
+      .channel('orders-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders'
+      }, () => {
+        fetchStats();
+        fetchOrders();
+      })
+      .subscribe();
+
+    const emailsChannel = supabase
+      .channel('emails-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'email_signups'
+      }, () => {
+        fetchStats();
+        fetchEmailSignups();
+      })
+      .subscribe();
+
+    const usersChannel = supabase
+      .channel('users-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'users'
+      }, () => {
+        fetchStats();
+        fetchUsers();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(productsChannel);
+      supabase.removeChannel(bannersChannel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(emailsChannel);
+      supabase.removeChannel(usersChannel);
+    };
+    */
+>>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
   }, []);
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching products:', error);
-        toast({
-          title: "Error loading products",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-      // Type assertion to handle flexible data structure
+      const res = await fetch('/api/products');
+      const data = await res.json();
       setProducts(data as Product[] || []);
     } catch (error: any) {
       console.error('Error fetching products:', error);
+<<<<<<< HEAD
       setProducts([]);
       toast({
         title: "Error",
         description: error.message || "Failed to load products",
         variant: "destructive",
       });
+=======
+      toast({ title: "Error", description: error.message || "Failed to load products", variant: "destructive" });
+>>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
     }
   };
 
   const fetchCollections = async () => {
     try {
-      const { data, error } = await supabase
-        .from('collections')
-        .select('name');
-      
-      if (error) throw error;
-      setCollections(data?.map(c => c.name) || []);
+      const res = await fetch('/api/collections');
+      const data = await res.json();
+      setCollections(data?.map((c: any) => c.name) || []);
     } catch (error) {
       console.error('Error fetching collections:', error);
       setCollections([]);
@@ -194,18 +273,17 @@ const Admin = () => {
 
   const fetchStats = async () => {
     try {
-      const [productsCount, ordersCount, emailsCount, usersCount] = await Promise.all([
-        supabase.from('products').select('*', { count: 'exact', head: true }),
-        supabase.from('orders').select('*', { count: 'exact', head: true }),
-        supabase.from('email_signups').select('*', { count: 'exact', head: true }),
-        supabase.from('users').select('*', { count: 'exact', head: true })
+      const [products, orders, emails, users] = await Promise.all([
+        fetch('/api/products').then(r => r.json()),
+        fetch('/api/orders').then(r => r.json()),
+        fetch('/api/emails').then(r => r.json()),
+        fetch('/api/users').then(r => r.json()),
       ]);
-
       setStats({
-        totalProducts: productsCount.count || 0,
-        totalOrders: ordersCount.count || 0,
-        emailSignups: emailsCount.count || 0,
-        totalUsers: usersCount.count || 0
+        totalProducts: Array.isArray(products) ? products.length : 0,
+        totalOrders: Array.isArray(orders) ? orders.length : 0,
+        emailSignups: Array.isArray(emails) ? emails.length : 0,
+        totalUsers: Array.isArray(users) ? users.length : 0,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -220,13 +298,9 @@ const Admin = () => {
 
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setOrders(data || []);
+      const res = await fetch('/api/orders');
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching orders:', error);
       setOrders([]);
@@ -235,13 +309,9 @@ const Admin = () => {
 
   const fetchEmailSignups = async () => {
     try {
-      const { data, error } = await supabase
-        .from('email_signups')
-        .select('*')
-        .order('subscribed_at', { ascending: false });
-      
-      if (error) throw error;
-      setEmailSignups(data || []);
+      const res = await fetch('/api/emails');
+      const data = await res.json();
+      setEmailSignups(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching email signups:', error);
       setEmailSignups([]);
@@ -250,13 +320,9 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setUsers(data || []);
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching users:', error);
       setUsers([]);
@@ -265,60 +331,34 @@ const Admin = () => {
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('orders').update({ status: newStatus }).eq('id', orderId)
-        : await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Order updated",
-        description: `Order status changed to ${newStatus}`,
+      const res = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
       });
-      
+      if (!res.ok) throw new Error((await res.json()).message || 'Update failed');
+      toast({ title: "Order updated", description: `Order status changed to ${newStatus}` });
       fetchOrders();
     } catch (error: any) {
-      toast({
-        title: "Update failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
     }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
     if (!confirm('Are you sure you want to delete this order?')) return;
-    
     try {
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('orders').delete().eq('id', orderId)
-        : await supabase.from('orders').delete().eq('id', orderId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Order deleted",
-        description: "Order has been removed successfully",
-      });
-      
+      const res = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).message || 'Delete failed');
+      toast({ title: "Order deleted", description: "Order has been removed successfully" });
       fetchOrders();
       fetchStats();
     } catch (error: any) {
-      toast({
-        title: "Delete failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
     }
   };
 
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       const productData: any = {
         name: productForm.product_name,
@@ -332,101 +372,35 @@ const Admin = () => {
         tags: productForm.tags,
         discount_percentage: productForm.discount_percentage ?? 0,
         image_url: productForm.images[0] || null,
-        image_file_path: productForm.images.join(',') // Store all images as comma-separated
+        image_file_path: productForm.images.join(',')
       };
 
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      let result;
-      
-      if (editingProduct) {
-        // Update existing product
-        result = adminClient 
-          ? await adminClient.from('products').update(productData).eq('id', editingProduct)
-          : await supabase.from('products').update(productData).eq('id', editingProduct);
-      } else {
-        // Insert new product
-        result = adminClient 
-          ? await adminClient.from('products').insert([productData])
-          : await supabase.from('products').insert([productData]);
-      }
-
-      if (result.error) {
-        console.error('Database error:', result.error);
-        throw new Error(result.error.message || 'Failed to save product');
-      }
-
-      toast({
-        title: editingProduct ? "Product updated!" : "Product created!",
-        description: "Changes have been saved and synced across all pages.",
+      const url = editingProduct ? `/api/products/${editingProduct}` : '/api/products';
+      const method = editingProduct ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData),
       });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to save product');
 
+      toast({ title: editingProduct ? "Product updated!" : "Product created!", description: "Changes saved successfully." });
       resetForm();
-      // Refresh products list
       fetchProducts();
-      // Products will auto-refresh via real-time subscription
     } catch (error: any) {
-      console.error('Error saving product:', error);
-      toast({
-        title: "Error saving product",
-        description: error.message || "Please check your input and try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error saving product", description: error.message || "Please check your input.", variant: "destructive" });
     }
   };
 
   const deleteProduct = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
     try {
-      // First check if this product has orders
-      const adminClient = getAdminClient();
-      const { data: ordersWithProduct, error: checkError } = adminClient
-        ? await adminClient.from("orders").select("id").eq("product_id", id).limit(1)
-        : await supabase.from("orders").select("id").eq("product_id", id).limit(1);
-
-      if (checkError) {
-        console.error('Error checking orders:', checkError);
-      }
-
-      // Customize confirmation message based on whether product has orders
-      const hasOrders = ordersWithProduct && ordersWithProduct.length > 0;
-      const confirmMessage = hasOrders
-        ? 'This product has existing orders. The product will be deleted but order history will be preserved. Continue?'
-        : 'Are you sure you want to delete this product? This action cannot be undone.';
-      
-      if (!confirm(confirmMessage)) {
-        return;
-      }
-
-      // Delete the product (orders will have product_id set to NULL due to foreign key constraint)
-      const { error, data } = adminClient
-        ? await adminClient.from('products').delete().eq('id', id).select()
-        : await supabase.from('products').delete().eq('id', id).select();
-
-      if (error) {
-        console.error('Delete error:', error);
-        throw new Error(error.message);
-      }
-
-      console.log('Delete successful, affected rows:', data);
-      
-      toast({
-        title: "Product deleted",
-        description: hasOrders 
-          ? "Product removed successfully. Order history preserved."
-          : "Product has been removed and synced across all pages.",
-      });
-
-      // Refresh the product list to reflect the deletion
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to delete product');
+      toast({ title: "Product deleted", description: "Product has been removed successfully." });
       fetchProducts();
-      
-      // Products will auto-refresh via real-time subscription as well
     } catch (error: any) {
-      console.error('Error deleting product:', error);
-      toast({
-        title: "Error deleting product",
-        description: error.message || "Failed to delete product.",
-        variant: "destructive",
-      });
+      toast({ title: "Error deleting product", description: error.message || "Failed to delete product.", variant: "destructive" });
     }
   };
 
@@ -493,13 +467,9 @@ const Admin = () => {
 
   const fetchSaleBanners = async () => {
     try {
-      const { data, error } = await supabase
-        .from('sale_banners')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setSaleBanners(data || []);
+      const res = await fetch('/api/banners');
+      const data = await res.json();
+      setSaleBanners(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching sale banners:', error);
       setSaleBanners([]);
@@ -508,97 +478,45 @@ const Admin = () => {
 
   const handleBannerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('sale_banners').insert([bannerForm])
-        : await supabase.from('sale_banners').insert([bannerForm]);
-
-      if (error) {
-        console.error('Banner error:', error);
-        throw new Error(error.message);
-      }
-
-      toast({
-        title: "Banner created!",
-        description: "Sale banner has been added and is now live.",
+      const res = await fetch('/api/banners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bannerForm),
       });
-
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to create banner');
+      toast({ title: "Banner created!", description: "Sale banner has been added and is now live." });
       setBannerForm({ message: "", is_active: true });
-      // Banners will auto-refresh via real-time subscription
+      fetchSaleBanners();
     } catch (error: any) {
-      console.error('Error creating banner:', error);
-      toast({
-        title: "Error creating banner",
-        description: error.message || "Failed to create banner. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error creating banner", description: error.message || "Failed to create banner.", variant: "destructive" });
     }
   };
 
   const toggleBannerStatus = async (id: string, currentStatus: boolean) => {
     try {
-      // Use admin client for full permissions
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('sale_banners').update({ is_active: !currentStatus }).eq('id', id)
-        : await supabase.from('sale_banners').update({ is_active: !currentStatus }).eq('id', id);
-
-      if (error) {
-        console.error('Toggle banner error:', error);
-        throw new Error(error.message);
-      }
-
-      toast({
-        title: "Banner updated!",
-        description: `Banner is now ${!currentStatus ? 'active' : 'inactive'}.`,
-      });
-
-      // Banners will auto-refresh via real-time subscription
+      const res = await fetch(`/api/banners/${id}/toggle`, { method: 'PATCH' });
+      if (!res.ok) throw new Error((await res.json()).message || 'Update failed');
+      toast({ title: "Banner updated!", description: `Banner is now ${!currentStatus ? 'active' : 'inactive'}.` });
+      fetchSaleBanners();
     } catch (error: any) {
-      console.error('Error updating banner:', error);
-      toast({
-        title: "Error updating banner",
-        description: error.message || "Failed to update banner.",
-        variant: "destructive",
-      });
+      toast({ title: "Error updating banner", description: error.message || "Failed to update banner.", variant: "destructive" });
     }
   };
 
   const deleteBanner = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this banner? This action cannot be undone.")) {
-      return;
-    }
-
+    if (!confirm("Are you sure you want to delete this banner?")) return;
     try {
-      const adminClient = getAdminClient();
-      const { error } = adminClient
-        ? await adminClient.from('sale_banners').delete().eq('id', id)
-        : await supabase.from('sale_banners').delete().eq('id', id);
-
-      if (error) {
-        console.error('Delete banner error:', error);
-        throw new Error(error.message);
-      }
-
-      toast({
-        title: "Banner deleted!",
-        description: "Banner has been permanently removed.",
-      });
-      // Banners will auto-refresh via real-time subscription
+      const res = await fetch(`/api/banners/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).message || 'Delete failed');
+      toast({ title: "Banner deleted!", description: "Banner has been permanently removed." });
+      fetchSaleBanners();
     } catch (error: any) {
-      console.error('Error deleting banner:', error);
-      toast({
-        title: "Error deleting banner",
-        description: error.message || "Failed to delete banner.",
-        variant: "destructive",
-      });
+      toast({ title: "Error deleting banner", description: error.message || "Failed to delete banner.", variant: "destructive" });
     }
   };
 
-  // Enhanced image upload function with better error handling
+  // Enhanced image upload function with Cloudinary backend
   const handleImageUpload = async (file: File) => {
     try {
       // Validate file type
@@ -612,77 +530,21 @@ const Admin = () => {
         throw new Error('Image size must be less than 5MB');
       }
       
-      // Generate unique file name
-      const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `products/${fileName}`;
-      
-      // Check if images bucket exists, create it if not
-      try {
-        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-        if (bucketError) {
-          console.warn('Error listing buckets:', bucketError);
-        } else {
-          const imagesBucket = buckets?.find(bucket => bucket.name === 'images');
-          
-          if (!imagesBucket) {
-            // Try to create the bucket
-            const { error: createError } = await supabase.storage.createBucket('images', {
-              public: true
-            });
-            
-            if (createError) {
-              console.warn('Could not create images bucket:', createError);
-            } else {
-              console.log('Successfully created images bucket');
-            }
-          }
-        }
-      } catch (bucketError) {
-        console.warn('Error checking/creating images bucket:', bucketError);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Upload failed');
       }
-      
-      // Try to upload file using admin client for full permissions
-      const adminClient = getAdminClient();
-      const { data: uploadData, error: uploadError } = adminClient
-        ? await adminClient.storage.from('images').upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: file.type
-          })
-        : await supabase.storage.from('images').upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: file.type
-          });
-      
-      // Handle upload errors gracefully
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        
-        // If it's a bucket not found error, provide specific instructions
-        if (uploadError.message.includes('Bucket not found')) {
-          throw new Error('Storage bucket "images" not found. Please create an "images" bucket in your Supabase Storage dashboard and set it as public.');
-        }
-        
-        // If it's a storage permission error, provide a more helpful message
-        if (uploadError.message.includes('row-level security') || uploadError.message.includes('permission')) {
-          throw new Error('Storage permission error. Please ensure the "images" bucket exists and has proper permissions configured in Supabase Storage.');
-        }
-        
-        throw new Error(`Upload failed: ${uploadError.message}`);
-      }
-      
-      // Get public URL
-      const { data: { publicUrl } } = adminClient
-        ? adminClient.storage.from('images').getPublicUrl(filePath)
-        : supabase.storage.from('images').getPublicUrl(filePath);
-      
-      if (!publicUrl) {
-        throw new Error('Failed to get public URL for uploaded image');
-      }
-      
-      return publicUrl;
+
+      const data = await response.json();
+      return data.url; // Returns the secure Cloudinary URL
     } catch (error: any) {
       console.error('Image upload error:', error);
       throw error;

@@ -9,10 +9,13 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start:backend": "npx tsx src/lib/backend.ts",
+    "backend": "npx tsx --env-file=.env backend/index.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@prisma/client": "^6.19.3",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -43,6 +46,7 @@
     "@tanstack/react-query": "^5.83.0",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
+<<<<<<< HEAD
     "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -51,11 +55,24 @@
     "dotenv": "^17.3.1",
     "embla-carousel-react": "^8.6.0",
     "express": "^5.2.1",
+=======
+    "cloudinary": "^2.10.0",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.7",
+    "embla-carousel-react": "^8.6.0",
+    "express": "^4.21.2",
+>>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
     "framer-motion": "^12.23.24",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
+    "multer": "^2.1.1",
     "next-themes": "^0.3.0",
     "pg": "^8.20.0",
+    "prisma": "^6.19.3",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -73,8 +90,15 @@
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/bcrypt": "^6.0.0",
+<<<<<<< HEAD
+=======
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
+>>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
     "@types/node": "^22.16.5",
-    "@types/pg": "^8.18.0",
+    "@types/pg": "^8.20.0",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
@@ -86,6 +110,7 @@
     "lovable-tagger": "^1.1.9",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19"

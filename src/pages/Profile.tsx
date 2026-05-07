@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,13 +65,26 @@ export default function Profile() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (!response.ok) {
+          navigate("/auth");
+          return;
+        }
+        
+        const data = await response.json();
+        setUser(data.user);
+        setProfileForm({
+          name: data.user.name || "",
+          email: data.user.email || "",
+          phone: data.user.phone || ""
+        });
+        
+        fetchUserData();
+      } catch (error) {
+        console.error("Auth check failed:", error);
         navigate("/auth");
-        return;
       }
-      
-      await fetchUserData();
     };
     
     checkAuth();
@@ -80,57 +92,16 @@ export default function Profile() {
 
   const fetchUserData = async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return;
-
-      // Fetch user profile
-      const { data: profile, error: profileError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("auth_user_id", authUser.id)
-        .single();
-
-      if (profileError) {
-        console.error("Profile fetch error:", profileError);
-        return;
+      // Fetch addresses
+      const addrRes = await fetch('/api/addresses');
+      if (addrRes.ok) {
+        setAddresses(await addrRes.json());
       }
 
-      if (profile) {
-        setUser(profile);
-        setProfileForm({
-          name: profile.name || "",
-          email: profile.email || "",
-          phone: profile.phone || ""
-        });
-        
-        // Fetch addresses
-        const { data: addressesData } = await supabase
-          .from("addresses")
-          .select("*")
-          .eq("user_id", profile.id)
-          .order("created_at", { ascending: false });
-        
-        setAddresses(addressesData || []);
-
-        // Fetch orders
-        const { data: ordersData } = await supabase
-          .from("orders")
-          .select(`
-            *,
-            addresses (
-              id,
-              address_line,
-              city,
-              state,
-              pincode,
-              country,
-              is_default
-            )
-          `)
-          .eq("user_id", profile.id)
-          .order("created_at", { ascending: false });
-        
-        setOrders(ordersData || []);
+      // Fetch orders
+      const ordersRes = await fetch('/api/orders/my-orders');
+      if (ordersRes.ok) {
+        setOrders(await ordersRes.json());
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -145,7 +116,11 @@ export default function Profile() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.error(e);
+    }
     navigate("/");
   };
 
@@ -153,22 +128,21 @@ export default function Profile() {
     if (!user) return;
     
     try {
-      if (editingAddress) {
-        const { error } = await supabase
-          .from("addresses")
-          .update(newAddress)
-          .eq("id", editingAddress.id);
-        
-        if (error) throw error;
-        toast({ title: "Address updated successfully!" });
-      } else {
-        const { error } = await supabase
-          .from("addresses")
-          .insert([{ ...newAddress, user_id: user.id }]);
-        
-        if (error) throw error;
-        toast({ title: "Address added successfully!" });
+      const url = editingAddress ? `/api/addresses/${editingAddress.id}` : '/api/addresses';
+      const method = editingAddress ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAddress)
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to save address');
       }
+
+      toast({ title: `Address ${editingAddress ? 'updated' : 'added'} successfully!` });
       
       setNewAddress({ address_line: "", city: "", state: "", pincode: "", country: "India" });
       setEditingAddress(null);
@@ -185,12 +159,9 @@ export default function Profile() {
 
   const deleteAddress = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("addresses")
-        .delete()
-        .eq("id", id);
+      const res = await fetch(`/api/addresses/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete address');
       
-      if (error) throw error;
       toast({ title: "Address deleted successfully!" });
       fetchUserData();
     } catch (error: any) {
@@ -206,15 +177,19 @@ export default function Profile() {
     if (!user) return;
     
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({ 
-          name: profileForm.name, 
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileForm.name,
           phone: profileForm.phone
         })
-        .eq("id", user.id);
+      });
       
-      if (error) throw error;
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Failed to update profile');
+      }
       
       // Update local state
       setUser({ 
@@ -244,21 +219,12 @@ export default function Profile() {
     }
     
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwordForm.newPassword
-      });
-      
-      if (error) throw error;
-      
-      setPasswordForm({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: ""
-      });
-      
+      // In the new Express backend, we need an endpoint for this.
+      // Currently, it's not implemented, so we will show a placeholder message.
       toast({
-        title: "Success",
-        description: "Password updated successfully",
+        title: "Not Implemented",
+        description: "Password change is not fully wired up to the backend yet.",
+        variant: "destructive",
       });
     } catch (error: any) {
       toast({
@@ -275,16 +241,11 @@ export default function Profile() {
     }
     
     try {
-      // Delete user data from all tables
-      await supabase.from("addresses").delete().eq("user_id", user.id);
-      await supabase.from("orders").delete().eq("user_id", user.id);
-      await supabase.from("users").delete().eq("id", user.id);
+      const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete account');
       
-      // Delete auth user
-      const { error } = await supabase.auth.admin.deleteUser(user.auth_user_id);
-      
-      if (error) throw error;
-      
+      // Logout and redirect
+      await fetch('/api/auth/logout', { method: 'POST' });
       toast({
         title: "Account deleted",
         description: "Your account has been permanently deleted",

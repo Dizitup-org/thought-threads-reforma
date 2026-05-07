@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/ProductCard";
 import SaleBanner from "@/components/SaleBanner";
 import NewsletterForm from "@/components/NewsletterForm";
-import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-reforma-tshirt.jpg";
 import heroModelImage from "@/assets/hero-luxury-model.jpg";
 interface Product {
@@ -37,6 +36,31 @@ const Home = () => {
   useEffect(() => {
     fetchFeaturedProducts();
     fetchLatestProducts();
+<<<<<<< HEAD
+=======
+    
+    // Set up real-time subscription (commented out until backend WebSocket/SSE is ready)
+    /*
+    const channel = supabase
+      .channel('products-home-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'products'
+      }, (payload) => {
+        console.log('Home page: Real-time product change detected:', payload);
+        fetchFeaturedProducts();
+        fetchLatestProducts();
+      })
+      .subscribe((status) => {
+        console.log('Home page: Products channel status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    */
+>>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
   }, []);
 
   useEffect(() => {
@@ -61,14 +85,9 @@ const Home = () => {
 
   const fetchFeaturedProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('featured', true)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      
-      if (error) throw error;
+      const response = await fetch('/api/products?featured=true&limit=3');
+      if (!response.ok) throw new Error('Failed to fetch featured products');
+      const data = await response.json();
       setFeaturedProducts(data || []);
     } catch (error) {
       console.error('Error fetching featured products:', error);
@@ -78,13 +97,9 @@ const Home = () => {
 
   const fetchLatestProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(6);
-      
-      if (error) throw error;
+      const response = await fetch('/api/products?limit=6');
+      if (!response.ok) throw new Error('Failed to fetch latest products');
+      const data = await response.json();
       setLatestProducts(data || []);
     } catch (error) {
       console.error('Error fetching latest products:', error);

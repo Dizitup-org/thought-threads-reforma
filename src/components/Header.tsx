@@ -5,7 +5,6 @@ import { Menu, X, ShoppingBag, Settings, User, Shield, LogOut } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCart } from "@/hooks/useCart";
-import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,68 +21,30 @@ const Header = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check active session
+    // Check active session via backend API
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        
-        // Fetch user profile including avatar
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('auth_user_id', session.user.id)
-          .single();
-        setUserProfile(profile);
-        
-        // Check if user is admin
-        const { data: admin } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('email', session.user.email)
-          .single();
-        setIsAdmin(!!admin);
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const sessionData = await response.json();
+          setUser(sessionData.user);
+          setUserProfile(sessionData.profile);
+          setIsAdmin(sessionData.isAdmin);
+        }
+      } catch (error) {
+        console.error("Auth check failed", error);
       }
     };
 
     checkSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        // Fetch user profile
-        const fetchProfile = async () => {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('auth_user_id', session.user.id)
-            .single();
-          setUserProfile(profile);
-          
-          // Check if user is admin
-          const { data: admin } = await supabase
-            .from('admin_users')
-            .select('*')
-            .eq('email', session.user.email)
-            .single();
-          setIsAdmin(!!admin);
-        };
-        fetchProfile();
-      } else {
-        setUser(null);
-        setUserProfile(null);
-        setIsAdmin(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch(e) {
+      console.error(e);
+    }
     setUser(null);
     setUserProfile(null);
     setIsAdmin(false);

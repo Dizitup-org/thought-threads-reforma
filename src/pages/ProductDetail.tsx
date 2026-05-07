@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
@@ -44,13 +43,10 @@ const ProductDetail = () => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const response = await fetch(`/api/products/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch product');
+      const data = await response.json();
       
-      if (error) throw error;
       setProduct(data);
       
       // Parse images from image_file_path (comma-separated) or fallback to image_url
