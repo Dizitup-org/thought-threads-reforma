@@ -66,6 +66,7 @@ router.post('/', async (req: Request, res: Response) => {
     );
     return res.status(201).json(rows[0]);
   } catch (err: any) {
+    console.error('Error creating product:', err);
     return res.status(500).json({ message: 'Failed to create product', details: err.message });
   }
 });
@@ -121,6 +122,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (rows.length === 0) return res.status(404).json({ message: 'Product not found' });
     return res.status(200).json(rows[0]);
   } catch (err: any) {
+    console.error('Error updating product:', err);
     return res.status(500).json({ message: 'Failed to update product', details: err.message });
   }
 });

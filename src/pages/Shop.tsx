@@ -17,17 +17,17 @@ import SaleBanner from "@/components/SaleBanner";
 
 interface Product {
   id: string;
-  name: string;
+  product_name: string;
   price: number;
-  image_url?: string;
+  images?: string[];
   collection: string;
   stock: number;
   sizes: string[];
-  gsm?: number[];
+  gsm_options?: number[];
   description?: string;
   featured: boolean;
   tags?: string[];
-  discount_percentage?: number;
+  discount?: number;
   discounted_price?: number;
   is_on_sale?: boolean;
   created_at?: string;
@@ -73,7 +73,7 @@ const Shop = () => {
       setTags(uniqueTags);
       
       // Extract all GSM values
-      const allGsms = data?.flatMap((p: any) => p.gsm || []) || [];
+      const allGsms = data?.flatMap((p: any) => p.gsm_options || []) || [];
       const uniqueGsms = [...new Set(allGsms)].sort((a: any, b: any) => a - b) as number[];
       setAllGsms(uniqueGsms);
     } catch (error) {
@@ -99,7 +99,7 @@ const Shop = () => {
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -126,7 +126,7 @@ const Shop = () => {
     // GSM filter
     if (selectedGsm !== "all") {
       filtered = filtered.filter(product => 
-        product.gsm?.includes(Number(selectedGsm))
+        product.gsm_options?.includes(Number(selectedGsm))
       );
     }
 
@@ -142,7 +142,7 @@ const Shop = () => {
           const priceB2 = b.is_on_sale && b.discounted_price ? b.discounted_price : b.price;
           return priceB2 - priceA2;
         case "name":
-          return a.name.localeCompare(b.name);
+          return a.product_name.localeCompare(b.product_name);
         case "newest":
           return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
         default:
@@ -155,15 +155,15 @@ const Shop = () => {
 
   const transformProductForCard = (product: Product) => ({
     id: product.id,
-    name: product.name,
+    name: product.product_name,
     price: product.price,
-    image: product.image_url || '',
+    image: (product.images && product.images.length > 0) ? product.images[0] : '',
     collection: product.collection,
     stock: product.stock,
     sizes: product.sizes,
-    gsm: product.gsm,
+    gsm: product.gsm_options,
     tags: product.tags,
-    discount_percentage: product.discount_percentage,
+    discount_percentage: product.discount,
     discounted_price: product.discounted_price,
     is_on_sale: product.is_on_sale,
     featured: product.featured
