@@ -11,17 +11,17 @@ import heroImage from "@/assets/hero-reforma-tshirt.jpg";
 import heroModelImage from "@/assets/hero-luxury-model.jpg";
 interface Product {
   id: string;
-  name: string;
+  product_name: string;
   price: number;
-  image_url?: string;
+  images?: string[];
   collection: string;
   stock: number;
   sizes: string[];
-  gsm?: number[];
+  gsm_options?: number[];
   description?: string;
   featured: boolean;
   tags?: string[];
-  discount_percentage?: number;
+  discount?: number;
   discounted_price?: number;
   is_on_sale?: boolean;
   created_at?: string;
@@ -109,15 +109,15 @@ const Home = () => {
 
   const transformProductForCard = (product: Product) => ({
     id: product.id,
-    name: product.name,
+    name: product.product_name,
     price: product.price,
-    image: product.image_url || '',
+    image: (product.images && product.images.length > 0) ? product.images[0] : heroImage,
     collection: product.collection,
     stock: product.stock,
     sizes: product.sizes,
-    gsm: product.gsm,
+    gsm: product.gsm_options,
     tags: product.tags,
-    discount_percentage: product.discount_percentage,
+    discount_percentage: product.discount,
     discounted_price: product.discounted_price,
     is_on_sale: product.is_on_sale,
     featured: product.featured
@@ -235,7 +235,7 @@ const Home = () => {
                         key={product.id}
                         to={`/product/${product.id}`}
                         className="snap-center shrink-0 w-40 sm:w-44 md:w-52 lg:w-60"
-                        aria-label={product.name}
+                        aria-label={product.product_name}
                       >
                         <motion.div
                           className="rounded-2xl overflow-hidden border border-border/60 bg-background/25 backdrop-blur-sm shadow-lg will-change-transform"
@@ -244,8 +244,8 @@ const Home = () => {
                           transition={{ type: "spring", stiffness: 320, damping: 22 }}
                         >
                           <motion.img
-                            src={imageSrc}
-                            alt={product.name}
+                            src={product.images && product.images.length > 0 ? product.images[0] : heroImage}
+                            alt={product.product_name}
                             className="h-56 sm:h-60 md:h-64 w-full object-cover"
                             loading="lazy"
                             initial={false}

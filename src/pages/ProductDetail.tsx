@@ -9,18 +9,17 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Product {
   id: string;
-  name: string;
+  product_name: string;
   price: number;
-  image_url?: string;
-  image_file_path?: string;
+  images?: string[];
   collection: string;
   stock: number;
   sizes: string[];
-  gsm?: number[];
+  gsm_options?: number[];
   description?: string;
   featured: boolean;
   tags?: string[];
-  discount_percentage?: number;
+  discount?: number;
   discounted_price?: number;
   is_on_sale?: boolean;
 }
@@ -49,16 +48,12 @@ const ProductDetail = () => {
       
       setProduct(data);
       
-      // Parse images from image_file_path (comma-separated) or fallback to image_url
-      const productImages = data.image_file_path 
-        ? data.image_file_path.split(',').filter((img: string) => img.trim())
-        : data.image_url ? [data.image_url] : [];
-      
+      const productImages = data.images || [];
       setImages(productImages);
       
       // Set default GSM if available
-      if (data.gsm && data.gsm.length > 0) {
-        setSelectedGsm(data.gsm[0]);
+      if (data.gsm_options && data.gsm_options.length > 0) {
+        setSelectedGsm(data.gsm_options[0]);
       }
       
       // Set default size if available
@@ -116,7 +111,7 @@ const ProductDetail = () => {
       return;
     }
 
-    if (product?.gsm && product.gsm.length > 0 && !selectedGsm) {
+    if (product?.gsm_options && product.gsm_options.length > 0 && !selectedGsm) {
       toast({
         title: "Please select GSM",
         description: "Choose a GSM option before adding to cart.",
@@ -127,7 +122,7 @@ const ProductDetail = () => {
 
     addToCart({
       id: product!.id,
-      name: product!.name,
+      name: product!.product_name,
       price: product!.is_on_sale && product!.discounted_price ? product!.discounted_price : product!.price,
       size: selectedSize,
       collection: product!.collection,
@@ -137,12 +132,12 @@ const ProductDetail = () => {
 
     toast({
       title: "Added to cart!",
-      description: `${product!.name} (${selectedSize}${selectedGsm ? `, ${selectedGsm}gsm` : ''}) has been added to your cart.`,
+      description: `${product!.product_name} (${selectedSize}${selectedGsm ? `, ${selectedGsm}gsm` : ''}) has been added to your cart.`,
     });
   };
 
   const generateWhatsAppMessage = () => {
-    const message = `Hi RēForma, I'd like to order ${product!.name} (${selectedSize || 'Size TBD'}${selectedGsm ? `, ${selectedGsm}gsm` : ''}) from ${product!.collection}. Price: ₹${product!.is_on_sale && product!.discounted_price ? product!.discounted_price : product!.price}`;
+    const message = `Hi RēForma, I'd like to order ${product!.product_name} (${selectedSize || 'Size TBD'}${selectedGsm ? `, ${selectedGsm}gsm` : ''}) from ${product!.collection}. Price: ₹${product!.is_on_sale && product!.discounted_price ? product!.discounted_price : product!.price}`;
     return `https://wa.me/919831681756?text=${encodeURIComponent(message)}`;
   };
 
@@ -162,7 +157,7 @@ const ProductDetail = () => {
             <div className="relative aspect-square group">
               <img
                 src={images[currentImageIndex] || ''}
-                alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                alt={`${product.product_name} - Image ${currentImageIndex + 1}`}
                 className="w-full h-full object-cover rounded-lg shadow-elegant"
               />
               
@@ -227,7 +222,7 @@ const ProductDetail = () => {
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="serif-heading text-4xl font-bold text-elegant">{product.name}</h1>
+                <h1 className="serif-heading text-4xl font-bold text-elegant">{product.product_name}</h1>
                 {product.featured && (
                   <Badge variant="secondary" className="text-sm">Featured</Badge>
                 )}
@@ -238,7 +233,7 @@ const ProductDetail = () => {
                   <p className="text-xl line-through text-muted-foreground">₹{product.price}</p>
                   <p className="text-3xl font-bold text-destructive">₹{product.discounted_price}</p>
                   <Badge variant="destructive" className="text-sm">
-                    {product.discount_percentage}% OFF
+                    {product.discount}% OFF
                   </Badge>
                 </div>
               ) : (
@@ -270,11 +265,11 @@ const ProductDetail = () => {
             </div>
 
             {/* GSM Selection */}
-            {product.gsm && product.gsm.length > 0 && (
+            {product.gsm_options && product.gsm_options.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-primary mb-3">Select GSM</h3>
                 <div className="flex flex-wrap gap-2">
-                  {product.gsm.map((gsm) => (
+                  {product.gsm_options.map((gsm) => (
                     <Button
                       key={gsm}
                       variant={selectedGsm === gsm ? "default" : "outline"}
