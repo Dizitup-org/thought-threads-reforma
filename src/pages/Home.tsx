@@ -127,7 +127,7 @@ const Home = () => {
   const heroBlurSrc = heroModelImage;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pt-16">
       {/* Sale Banner */}
       <SaleBanner />
       
@@ -300,7 +300,7 @@ const Home = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {featuredProducts.map((product, index) => (
+            {featuredProducts.length > 0 ? featuredProducts.map((product, index) => (
               <motion.div 
                 key={product.id} 
                 initial={{ opacity: 0, y: 30 }}
@@ -310,7 +310,11 @@ const Home = () => {
               >
                 <ProductCard product={transformProductForCard(product)} />
               </motion.div>
-            ))}
+            )) : (
+              <div className="col-span-3 text-center py-12 text-muted-foreground">
+                <p className="text-lg">No featured products yet. Mark products as featured in the admin panel.</p>
+              </div>
+            )}
           </div>
 
           <motion.div 

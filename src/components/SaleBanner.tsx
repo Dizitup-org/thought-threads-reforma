@@ -32,11 +32,11 @@ const SaleBanner = () => {
 
   return (
     <div className="bg-primary text-primary-foreground py-2 overflow-hidden relative">
-      <div className="animate-marquee whitespace-nowrap">
-        {banners.map((banner, index) => (
-          <span key={banner.id} className="inline-block px-8 text-sm font-medium">
+      <div className="animate-marquee whitespace-nowrap inline-block">
+        {[...banners, ...banners, ...banners, ...banners, ...banners, ...banners].map((banner, index) => (
+          <span key={`${banner.id}-${index}`} className="inline-block px-8 text-sm font-medium">
             {banner.message}
-            {index < banners.length - 1 && <span className="mx-4">•</span>}
+            <span className="mx-4">•</span>
           </span>
         ))}
       </div>
