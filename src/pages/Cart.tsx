@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Minus, Plus, Trash2, ArrowLeft, QrCode, Timer, User, Mail, Phone } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Minus, Plus, Trash2, ArrowLeft, QrCode, Timer, User, Mail, Phone, MapPin } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from '@/hooks/use-toast';
 import AddressSelector from '@/components/AddressSelector';
@@ -27,6 +28,7 @@ const Cart = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
 
   // Check authentication and load user
   useEffect(() => {
@@ -83,10 +85,10 @@ const Cart = () => {
     e.preventDefault();
     
     // Validate form
-    if (!customerName.trim() || !customerEmail.trim() || !customerPhone.trim()) {
+    if (!customerName.trim() || !customerEmail.trim() || !customerPhone.trim() || !customerAddress.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all customer details.",
+        description: "Please fill in all fields including your delivery address.",
         variant: "destructive",
       });
       return;
@@ -120,10 +122,8 @@ const Cart = () => {
 
   const handleAddressSelected = async (address: any) => {
     setSelectedAddress(address);
+    setCustomerAddress(`${address.address_line}, ${address.city}, ${address.state} - ${address.pincode}`);
     setShowAddressSelector(false);
-    
-    // Instead of saving to database immediately, show payment QR
-    setShowPaymentQR(true);
   };
 
   const handleIHavePaid = async () => {
@@ -141,6 +141,7 @@ const Cart = () => {
           customer_name: customerName,
           customer_email: customerEmail,
           customer_phone: customerPhone,
+          customer_address: customerAddress,
           total_amount: item.price * item.quantity,
           status: 'Pending'
         };
@@ -170,9 +171,10 @@ I've just completed payment for my order!
 Name: ${customerName}
 Email: ${customerEmail}
 Phone: ${customerPhone}
+Address: ${customerAddress}
 
 *Order Summary:*
-${items.map(item => `• ${item.name} (${item.size}${item.gsm ? `, ${item.gsm}gsm` : ''}) x ${item.quantity} = ₹${(item.price * item.quantity).toFixed(2)}`).join('\n')}
+${items.map(item => `• ${item.name} (${item.size}${item.gsm ? `, ${item.gsm}gsm` : ''}) x ${item.quantity} = ₹${(Number(item.price) * item.quantity).toFixed(2)}`).join('\n')}
 
 *Total Amount Paid: ₹${totalPrice.toFixed(2)}*
 
@@ -248,7 +250,7 @@ Thank you!`;
                       <h3 className="font-semibold text-reforma-brown">{item.name}</h3>
                       <p className="text-sm text-muted-foreground">{item.collection}</p>
                       <p className="text-sm text-muted-foreground">Size: {item.size}{item.gsm && `, ${item.gsm}gsm`}</p>
-                      <p className="font-medium text-reforma-brown">₹{item.price.toFixed(2)}</p>
+                      <p className="font-medium text-reforma-brown">₹{Number(item.price).toFixed(2)}</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
@@ -320,8 +322,8 @@ Thank you!`;
 
       {/* Customer Details Form Modal */}
       {showCustomerForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <Card className="max-w-md w-full my-4">
             <CardHeader>
               <CardTitle className="serif-heading text-xl text-reforma-brown">Customer Details</CardTitle>
               <p className="text-sm text-muted-foreground">Please provide your contact information to proceed</p>
@@ -372,6 +374,30 @@ Thank you!`;
                     className="input-reforma"
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Delivery Address *
+                  </Label>
+                  <Textarea
+                    id="address"
+                    placeholder="House/Flat No., Street, City, State, PIN code"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    className="input-reforma resize-none"
+                    rows={3}
+                    required
+                  />
+                  {user && (
+                    <button
+                      type="button"
+                      className="text-xs text-reforma-brown underline"
+                      onClick={() => setShowAddressSelector(true)}
+                    >
+                      Or select a saved address
+                    </button>
+                  )}
                 </div>
                 <div className="flex flex-col gap-3 pt-4">
                   <Button 

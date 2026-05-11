@@ -4,11 +4,25 @@ import pool from '../db.js';
 const router = Router();
 
 // ── GET /api/products ────────────────────────────────────────────────────────
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
+  const { featured, limit } = req.query;
+
   try {
-    const { rows } = await pool.query(
-      'SELECT * FROM products ORDER BY created_at DESC',
-    );
+    let query = 'SELECT * FROM products';
+    const params: any[] = [];
+
+    if (featured === 'true') {
+      query += ' WHERE featured = TRUE';
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    if (limit) {
+      params.push(parseInt(limit as string));
+      query += ` LIMIT $${params.length}`;
+    }
+
+    const { rows } = await pool.query(query, params);
     return res.status(200).json(rows);
   } catch (err: any) {
     return res.status(500).json({ message: 'Failed to fetch products', details: err.message });

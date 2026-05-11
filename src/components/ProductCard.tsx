@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { ShoppingCart, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Product {
   id: string;
@@ -23,6 +25,13 @@ interface Product {
   featured?: boolean;
 }
 
+const getOptimizedImageUrl = (url: string) => {
+  if (url && url.includes("cloudinary.com") && !url.includes("q_auto")) {
+    return url.replace("/upload/", "/upload/q_auto,f_auto,w_800/");
+  }
+  return url;
+};
+
 interface ProductCardProps {
   product: Product;
   showQuickActions?: boolean;
@@ -31,6 +40,7 @@ interface ProductCardProps {
 const ProductCard = ({ product, showQuickActions = false }: ProductCardProps) => {
   const { toast } = useToast();
   const { addToCart } = useCart();
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleQuickAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -77,14 +87,24 @@ const ProductCard = ({ product, showQuickActions = false }: ProductCardProps) =>
               </div>
             )}
             
-            <div className="relative overflow-hidden">
+            <div className="relative overflow-hidden h-80 bg-muted">
+              {!imageLoaded && (
+                <Skeleton className="absolute inset-0 w-full h-full" />
+              )}
               <motion.img
-                src={product.image}
+                src={getOptimizedImageUrl(product.image)}
                 alt={product.name}
                 className="w-full h-80 object-cover"
-                initial={{ scale: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ 
+                  opacity: imageLoaded ? 1 : 0 
+                }}
                 whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
+                onLoad={() => setImageLoaded(true)}
+                transition={{ 
+                  opacity: { duration: 0.5 },
+                  scale: { duration: 0.4, ease: "easeOut" }
+                }}
               />
 
               {showQuickActions && (

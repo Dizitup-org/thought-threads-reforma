@@ -27,7 +27,7 @@ router.get('/my-orders', async (req: Request, res: Response) => {
 
     const { rows } = await pool.query(
       `SELECT * FROM orders
-       WHERE customer_email = $1
+       WHERE LOWER(customer_email) = LOWER($1)
        ORDER BY created_at DESC`,
       [userEmail]
     );
@@ -59,13 +59,22 @@ router.post('/', async (req: Request, res: Response) => {
     customer_email,
     customer_phone,
     status,
+    customer_name,
+    total_amount,
+    gsm,
+    customer_address,
   } = req.body;
+
+  console.log('[POST /api/orders] customer_address received:', customer_address);
+
+  // Treat empty string as null
+  const addressValue = customer_address && customer_address.trim() !== '' ? customer_address.trim() : null;
 
   try {
     const { rows } = await pool.query(
       `INSERT INTO orders
-        (product_id, product_name, size, collection, customer_email, customer_phone, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+        (product_id, product_name, size, collection, customer_email, customer_phone, status, customer_name, total_amount, gsm, customer_address)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
       [
         product_id ?? null,
@@ -75,6 +84,10 @@ router.post('/', async (req: Request, res: Response) => {
         customer_email ?? null,
         customer_phone ?? null,
         status ?? 'pending',
+        customer_name ?? null,
+        total_amount ?? null,
+        gsm ?? null,
+        addressValue,
       ],
     );
     return res.status(201).json(rows[0]);

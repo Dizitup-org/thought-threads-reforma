@@ -1012,12 +1012,13 @@ const Admin = () => {
                           </Badge>
                         </div>
                         
-                        {(order.customer_name || order.customer_email || order.customer_phone) && (
+                        {(order.customer_name || order.customer_email || order.customer_phone || order.customer_address) && (
                           <div className="bg-muted/50 p-3 rounded space-y-1">
                             <p className="text-sm font-medium text-reforma-brown">Customer Details:</p>
                             {order.customer_name && <p className="text-sm">Name: {order.customer_name}</p>}
                             {order.customer_email && <p className="text-sm">Email: {order.customer_email}</p>}
                             {order.customer_phone && <p className="text-sm">Phone: {order.customer_phone}</p>}
+                            {order.customer_address && <p className="text-sm">Address: {order.customer_address}</p>}
                           </div>
                         )}
                         
