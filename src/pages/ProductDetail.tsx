@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ShoppingBag, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,12 +28,14 @@ const ProductDetail = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedGsm, setSelectedGsm] = useState<number | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [images, setImages] = useState<string[]>([]);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     fetchProduct();
@@ -73,6 +75,14 @@ const ProductDetail = () => {
 
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const incrementQuantity = () => {
+    setQuantity((prev) => Math.min(prev + 1, Math.max(product?.stock || 1, 1)));
+  };
+
+  const decrementQuantity = () => {
+    setQuantity((prev) => Math.max(prev - 1, 1));
   };
 
   if (loading) {
@@ -127,18 +137,47 @@ const ProductDetail = () => {
       size: selectedSize,
       collection: product!.collection,
       image_url: images[0] || '',
-      gsm: selectedGsm || undefined
+      gsm: selectedGsm || undefined,
+      quantity,
     });
 
     toast({
       title: "Added to cart!",
-      description: `${product!.product_name} (${selectedSize}${selectedGsm ? `, ${selectedGsm}gsm` : ''}) has been added to your cart.`,
+      description: `${quantity} x ${product!.product_name} (${selectedSize}${selectedGsm ? `, ${selectedGsm}gsm` : ''}) has been added to your cart.`,
     });
   };
 
-  const generateWhatsAppMessage = () => {
-    const message = `Hi RēForma, I'd like to order ${product!.product_name} (${selectedSize || 'Size TBD'}${selectedGsm ? `, ${selectedGsm}gsm` : ''}) from ${product!.collection}. Price: ₹${product!.is_on_sale && product!.discounted_price ? product!.discounted_price : product!.price}`;
-    return `https://wa.me/919831681756?text=${encodeURIComponent(message)}`;
+  const handleOrderNow = () => {
+    if (!selectedSize) {
+      toast({
+        title: "Please select a size",
+        description: "Choose a size before continuing to checkout.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (product?.gsm_options && product.gsm_options.length > 0 && !selectedGsm) {
+      toast({
+        title: "Please select GSM",
+        description: "Choose a GSM option before continuing to checkout.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addToCart({
+      id: product!.id,
+      name: product!.product_name,
+      price: product!.is_on_sale && product!.discounted_price ? product!.discounted_price : product!.price,
+      size: selectedSize,
+      collection: product!.collection,
+      image_url: images[0] || '',
+      gsm: selectedGsm || undefined,
+      quantity,
+    });
+
+    navigate('/cart', { state: { startCheckout: true } });
   };
 
   return (
@@ -285,20 +324,48 @@ const ProductDetail = () => {
 
             <Card>
               <CardContent className="p-6 space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-primary mb-3">Quantity</h3>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={decrementQuantity}
+                      disabled={quantity <= 1}
+                      className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="min-w-8 text-center text-lg font-medium">{quantity}</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={incrementQuantity}
+                      disabled={quantity >= Math.max(product.stock, 1)}
+                      className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                    </span>
+                  </div>
+                </div>
+
                 <Button 
                   onClick={handleAddToCart}
                   className="w-full btn-elegant" 
                   size="lg"
-                  disabled={!selectedSize}
+                  disabled={!selectedSize || product.stock <= 0}
                 >
                   <ShoppingBag className="mr-2 h-5 w-5" />
                   Add to Cart
                 </Button>
                 
-                <Button asChild variant="outline" className="w-full" size="lg">
-                  <a href={generateWhatsAppMessage()} target="_blank" rel="noopener noreferrer">
-                    Order via WhatsApp
-                  </a>
+                <Button variant="outline" className="w-full" size="lg" onClick={handleOrderNow} disabled={!selectedSize || product.stock <= 0}>
+                  Order Now
                 </Button>
               </CardContent>
             </Card>

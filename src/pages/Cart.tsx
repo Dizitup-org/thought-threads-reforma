@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Minus, Plus, Trash2, ArrowLeft, QrCode, Timer, User, Mail, Phone, MapPin } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Minus, Plus, Trash2, ArrowLeft, Timer, User, Mail, Phone, MapPin } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useToast } from '@/hooks/use-toast';
 import AddressSelector from '@/components/AddressSelector';
 import paymentQrCode from '@/assets/payment-qr-code.png';
@@ -20,6 +20,7 @@ const Cart = () => {
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [adminPhoneNumber, setAdminPhoneNumber] = useState("+916289702019");
+  const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -48,6 +49,15 @@ const Cart = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (!location.state?.startCheckout || items.length === 0) {
+      return;
+    }
+
+    setShowCustomerForm(true);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [items.length, location.pathname, location.state, navigate]);
 
   const loadAdminSettings = async () => {
     try {
