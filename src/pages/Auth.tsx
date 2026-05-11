@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { setUser, setIsAdmin, checkSession } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -63,6 +65,10 @@ export default function Auth() {
            throw new Error(errData.message || 'Login failed');
         }
         const data = await response.json();
+        
+        // Update auth context immediately
+        setUser({ email, name: data.user?.name || email });
+        setIsAdmin(data.isAdmin || false);
         
         toast({
           title: "Welcome back!",
