@@ -118,7 +118,7 @@ const Home = () => {
     featured: product.featured
   });
 
-  // Keep a consistent ΓÇ£subjectΓÇ¥ background (like the reference hero). The carousel is still real product data.
+  // Keep a consistent "subject" background (like the reference hero). The carousel is still real product data.
   const heroBlurSrc = heroModelImage;
 
   return (
@@ -420,7 +420,7 @@ const Home = () => {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 viewport={{ once: true }}
               >
-                R─ÆFORMA represents the intersection of conscious design and sophisticated aesthetics. Each piece is thoughtfully crafted for those who understand that true luxury lies not in ostentation, but in the quiet confidence of knowing you've chosen well.
+                RēForma represents the intersection of conscious design and sophisticated aesthetics. Each piece is thoughtfully crafted for those who understand that true luxury lies not in ostentation, but in the quiet confidence of knowing you've chosen well.
               </motion.p>
               <motion.p 
                 className="text-base sm:text-lg font-medium text-reforma-brown"

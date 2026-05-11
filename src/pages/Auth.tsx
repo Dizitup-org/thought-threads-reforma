@@ -116,7 +116,7 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="serif-heading text-2xl text-reforma-brown">
-            {isAdminLogin ? 'Admin Login' : (isLogin ? 'Welcome Back' : 'Join R─ôForma')}
+            {isAdminLogin ? 'Admin Login' : (isLogin ? 'Welcome Back' : 'Join RēForma')}
           </CardTitle>
           <CardDescription>
             {isAdminLogin 

@@ -545,7 +545,7 @@ const Admin = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="serif-heading text-4xl font-bold text-reforma-brown mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your R─ÆFORMA collection</p>
+          <p className="text-muted-foreground">Manage your RēForma collection</p>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
@@ -680,7 +680,7 @@ const Admin = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="price">Price (Γé╣)</Label>
+                        <Label htmlFor="price">Price (₹)</Label>
                         <Input
                           id="price"
                           type="number"
@@ -935,7 +935,7 @@ const Admin = () => {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Γé╣{product.price || 0} ΓÇó {product.collection || "Unknown"} ΓÇó {product.stock || 0} in stock
+                            ₹{product.price || 0} • {product.collection || "Unknown"} • {product.stock || 0} in stock
                           </p>
                           {(product.gsm_options || product.gsm) && (product.gsm_options || product.gsm).length > 0 && (
                             <p className="text-xs text-muted-foreground">
@@ -1024,7 +1024,7 @@ const Admin = () => {
                         
                         <div className="flex items-center justify-between pt-2 border-t">
                           <div>
-                            <p className="text-lg font-bold text-reforma-brown">Γé╣{Number(order.total_amount).toFixed(2)}</p>
+                            <p className="text-lg font-bold text-reforma-brown">₹{Number(order.total_amount).toFixed(2)}</p>
                             <p className="text-xs text-muted-foreground">
                               {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString()}
                             </p>
