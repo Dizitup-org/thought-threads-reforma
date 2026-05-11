@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,17 +18,17 @@ import SaleBanner from "@/components/SaleBanner";
 
 interface Product {
   id: string;
-  name: string;
+  product_name: string;
   price: number;
-  image_url?: string;
+  images?: string[];
   collection: string;
   stock: number;
   sizes: string[];
-  gsm?: number[];
+  gsm_options?: number[];
   description?: string;
   featured: boolean;
   tags?: string[];
-  discount_percentage?: number;
+  discount?: number;
   discounted_price?: number;
   is_on_sale?: boolean;
   created_at?: string;
@@ -46,6 +47,8 @@ const Shop = () => {
   const [collections, setCollections] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [allGsms, setAllGsms] = useState<number[]>([]);
+  const [searchParams] = useSearchParams();
+  const featuredOnly = searchParams.get("featured") === "true";
 
   // Available GSM options as per requirements
   const gsmOptions = [180, 210, 220, 240];
@@ -57,7 +60,7 @@ const Shop = () => {
 
   useEffect(() => {
     filterAndSortProducts();
-  }, [products, searchTerm, selectedCollection, selectedTag, selectedSize, selectedGsm, sortBy]);
+  }, [products, searchTerm, selectedCollection, selectedTag, selectedSize, selectedGsm, sortBy, featuredOnly]);
 
   const fetchProducts = async () => {
     try {
@@ -73,7 +76,7 @@ const Shop = () => {
       setTags(uniqueTags);
       
       // Extract all GSM values
-      const allGsms = data?.flatMap((p: any) => p.gsm || []) || [];
+      const allGsms = data?.flatMap((p: any) => p.gsm_options || []) || [];
       const uniqueGsms = [...new Set(allGsms)].sort((a: any, b: any) => a - b) as number[];
       setAllGsms(uniqueGsms);
     } catch (error) {
@@ -100,10 +103,15 @@ const Shop = () => {
   const filterAndSortProducts = () => {
     let filtered = products;
 
+    // Featured filter (from URL param)
+    if (featuredOnly) {
+      filtered = filtered.filter(product => product.featured);
+    }
+
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -130,7 +138,7 @@ const Shop = () => {
     // GSM filter
     if (selectedGsm !== "all") {
       filtered = filtered.filter(product => 
-        product.gsm?.includes(Number(selectedGsm))
+        product.gsm_options?.includes(Number(selectedGsm))
       );
     }
 
@@ -146,7 +154,7 @@ const Shop = () => {
           const priceB2 = b.is_on_sale && b.discounted_price ? b.discounted_price : b.price;
           return priceB2 - priceA2;
         case "name":
-          return a.name.localeCompare(b.name);
+          return a.product_name.localeCompare(b.product_name);
         case "newest":
           return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
         default:
@@ -159,15 +167,15 @@ const Shop = () => {
 
   const transformProductForCard = (product: Product) => ({
     id: product.id,
-    name: product.name,
+    name: product.product_name,
     price: product.price,
-    image: product.image_url || '',
+    image: (product.images && product.images.length > 0) ? product.images[0] : '',
     collection: product.collection,
     stock: product.stock,
     sizes: product.sizes,
-    gsm: product.gsm,
+    gsm: product.gsm_options,
     tags: product.tags,
-    discount_percentage: product.discount_percentage,
+    discount_percentage: product.discount,
     discounted_price: product.discounted_price,
     is_on_sale: product.is_on_sale,
     featured: product.featured
@@ -191,11 +199,18 @@ const Shop = () => {
           transition={{ duration: 0.6 }}
         >
           <h1 className="serif-heading text-4xl md:text-5xl font-bold mb-4 text-reforma-brown">
-            Our Collection
+            {featuredOnly ? "Featured Collection" : "Our Collection"}
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Discover thoughtfully crafted pieces that embody sophistication and conscious design.
+            {featuredOnly
+              ? "Curated pieces that embody our signature aesthetic and craftsmanship."
+              : "Discover thoughtfully crafted pieces that embody sophistication and conscious design."}
           </p>
+          {featuredOnly && (
+            <a href="/shop" className="inline-block mt-4 text-sm text-reforma-brown underline underline-offset-4">
+              ← View all products
+            </a>
+          )}
         </motion.div>
 
         {/* Filters and Search */}

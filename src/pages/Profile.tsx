@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { User, Package, MapPin, Settings, LogOut, Plus, Edit, Trash2, Eye, EyeOff } from "lucide-react";
+import { User, Package, MapPin, Settings, LogOut, Plus, Edit, Trash2, Eye, EyeOff, Check, Clock, Truck } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -555,21 +555,70 @@ export default function Profile() {
                                   {new Date(order.created_at).toLocaleDateString()}
                                 </p>
                               </div>
-                              <Badge variant={order.status === "Approved" ? "default" : order.status === "Disapproved" ? "destructive" : "secondary"}>
+                              <Badge 
+                                className={`
+                                  ${order.status === 'Pending' ? 'bg-yellow-500' : 
+                                    order.status === 'Processing' ? 'bg-blue-500' :
+                                    order.status === 'Shipped' ? 'bg-purple-500' :
+                                    order.status === 'Delivered' ? 'bg-green-500' :
+                                    order.status === 'Cancelled' ? 'bg-red-500' :
+                                    'bg-gray-500'} text-white
+                                `}
+                              >
                                 {order.status}
                               </Badge>
                             </div>
-                            <div className="text-sm mb-2">
+                            <div className="text-sm mb-4">
                               <p><strong>Product:</strong> {order.product_name} (Size: {order.size})</p>
                               <p><strong>Collection:</strong> {order.collection}</p>
                               <p><strong>Total:</strong> ₹{order.total_amount}</p>
-                              {order.addresses && (
-                                <p><strong>Address:</strong> {order.addresses.address_line}, {order.addresses.city}</p>
+                              {order.customer_address && (
+                                <p><strong>Address:</strong> {order.customer_address}</p>
                               )}
                             </div>
-                            <Button variant="outline" size="sm">
-                              Track Order
-                            </Button>
+                            
+                            {/* Order Tracking Stepper */}
+                            {order.status !== 'Cancelled' && (
+                              <div className="mt-4 border-t pt-4">
+                                <p className="text-sm font-medium mb-3 text-reforma-brown">Order Progress</p>
+                                <div className="flex items-center justify-between relative">
+                                  {/* Step 1: Pending */}
+                                  <div className="flex flex-col items-center z-10">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${['Pending', 'Processing', 'Shipped', 'Delivered'].includes(order.status || '') ? 'bg-reforma-brown text-white' : 'bg-muted text-muted-foreground'}`}>
+                                      <Clock className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-xs mt-1 font-medium">Pending</span>
+                                  </div>
+                                  <div className={`flex-1 h-1 mx-2 ${['Processing', 'Shipped', 'Delivered'].includes(order.status || '') ? 'bg-reforma-brown' : 'bg-muted'}`} />
+                                  
+                                  {/* Step 2: Processing */}
+                                  <div className="flex flex-col items-center z-10">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${['Processing', 'Shipped', 'Delivered'].includes(order.status || '') ? 'bg-reforma-brown text-white' : 'bg-muted text-muted-foreground'}`}>
+                                      <Settings className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-xs mt-1 font-medium">Processing</span>
+                                  </div>
+                                  <div className={`flex-1 h-1 mx-2 ${['Shipped', 'Delivered'].includes(order.status || '') ? 'bg-reforma-brown' : 'bg-muted'}`} />
+                                  
+                                  {/* Step 3: Shipped */}
+                                  <div className="flex flex-col items-center z-10">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${['Shipped', 'Delivered'].includes(order.status || '') ? 'bg-reforma-brown text-white' : 'bg-muted text-muted-foreground'}`}>
+                                      <Truck className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-xs mt-1 font-medium">Shipped</span>
+                                  </div>
+                                  <div className={`flex-1 h-1 mx-2 ${order.status === 'Delivered' ? 'bg-reforma-brown' : 'bg-muted'}`} />
+                                  
+                                  {/* Step 4: Delivered */}
+                                  <div className="flex flex-col items-center z-10">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${order.status === 'Delivered' ? 'bg-reforma-brown text-white' : 'bg-muted text-muted-foreground'}`}>
+                                      <Package className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-xs mt-1 font-medium">Delivered</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </motion.div>
                         ))}
                       </div>

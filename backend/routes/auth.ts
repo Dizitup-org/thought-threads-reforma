@@ -13,7 +13,7 @@ export async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS admin_users (
         id         SERIAL PRIMARY KEY,
         email      VARCHAR(255) UNIQUE NOT NULL,
-        password   VARCHAR(255) NOT NULL,
+        password_hash   VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -33,13 +33,13 @@ export async function initializeDatabase() {
 
     if (rows.length === 0) {
       await pool.query(
-        'INSERT INTO admin_users (email, password) VALUES ($1, $2)',
+        'INSERT INTO admin_users (email, password_hash) VALUES ($1, $2)',
         [adminEmail, adminPass],
       );
       console.log(`✅ Admin seeded: ${adminEmail}`);
     } else {
       await pool.query(
-        'UPDATE admin_users SET password = $1 WHERE email = $2',
+        'UPDATE admin_users SET password_hash = $1 WHERE email = $2',
         [adminPass, adminEmail],
       );
       console.log(`✅ Admin already exists, password synced: ${adminEmail}`);

@@ -4,11 +4,25 @@ import pool from '../db.js';
 const router = Router();
 
 // ── GET /api/products ────────────────────────────────────────────────────────
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
+  const { featured, limit } = req.query;
+
   try {
-    const { rows } = await pool.query(
-      'SELECT * FROM products ORDER BY created_at DESC',
-    );
+    let query = 'SELECT * FROM products';
+    const params: any[] = [];
+
+    if (featured === 'true') {
+      query += ' WHERE featured = TRUE';
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    if (limit) {
+      params.push(parseInt(limit as string));
+      query += ` LIMIT $${params.length}`;
+    }
+
+    const { rows } = await pool.query(query, params);
     return res.status(200).json(rows);
   } catch (err: any) {
     return res.status(500).json({ message: 'Failed to fetch products', details: err.message });
@@ -66,6 +80,7 @@ router.post('/', async (req: Request, res: Response) => {
     );
     return res.status(201).json(rows[0]);
   } catch (err: any) {
+    console.error('Error creating product:', err);
     return res.status(500).json({ message: 'Failed to create product', details: err.message });
   }
 });
@@ -121,6 +136,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (rows.length === 0) return res.status(404).json({ message: 'Product not found' });
     return res.status(200).json(rows[0]);
   } catch (err: any) {
+    console.error('Error updating product:', err);
     return res.status(500).json({ message: 'Failed to update product', details: err.message });
   }
 });

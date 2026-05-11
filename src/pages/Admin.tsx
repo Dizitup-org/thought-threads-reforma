@@ -338,18 +338,17 @@ const Admin = () => {
     e.preventDefault();
     try {
       const productData: any = {
-        name: productForm.product_name,
+        product_name: productForm.product_name,
         price: parseFloat(productForm.price),
         collection: productForm.collection,
         stock: parseInt(productForm.stock),
         sizes: productForm.sizes,
-        gsm: productForm.gsm_options,
+        gsm_options: productForm.gsm_options,
         description: productForm.description,
         featured: productForm.featured,
         tags: productForm.tags,
-        discount_percentage: productForm.discount_percentage ?? 0,
-        image_url: productForm.images[0] || null,
-        image_file_path: productForm.images.join(',')
+        discount: productForm.discount_percentage ?? 0,
+        images: productForm.images
       };
 
       const url = editingProduct ? `/api/products/${editingProduct}` : '/api/products';
@@ -383,17 +382,17 @@ const Admin = () => {
 
   const editProduct = (product: Product) => {
     setProductForm({
-      product_name: product.product_name || product.name || "",
+      product_name: product.product_name || "",
       price: (product.price || 0).toString(),
       collection: product.collection || "",
       stock: (product.stock || 0).toString(),
       sizes: product.sizes || [],
-      gsm_options: product.gsm_options || product.gsm || [],
+      gsm_options: product.gsm_options || [],
       description: product.description || "",
       featured: product.featured || false,
       tags: product.tags || [],
-      discount_percentage: product.discount_percentage !== undefined && product.discount_percentage !== null ? product.discount_percentage : null,
-      images: product.image_file_path ? product.image_file_path.split(',').filter((img: string) => img.trim()) : (product.image_url ? [product.image_url] : [])
+      discount_percentage: product.discount !== undefined && product.discount !== null ? product.discount : null,
+      images: product.images || []
     });
     setEditingProduct(product.id);
   };
@@ -1013,12 +1012,13 @@ const Admin = () => {
                           </Badge>
                         </div>
                         
-                        {(order.customer_name || order.customer_email || order.customer_phone) && (
+                        {(order.customer_name || order.customer_email || order.customer_phone || order.customer_address) && (
                           <div className="bg-muted/50 p-3 rounded space-y-1">
                             <p className="text-sm font-medium text-reforma-brown">Customer Details:</p>
                             {order.customer_name && <p className="text-sm">Name: {order.customer_name}</p>}
                             {order.customer_email && <p className="text-sm">Email: {order.customer_email}</p>}
                             {order.customer_phone && <p className="text-sm">Phone: {order.customer_phone}</p>}
+                            {order.customer_address && <p className="text-sm">Address: {order.customer_address}</p>}
                           </div>
                         )}
                         
