@@ -1,5 +1,6 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { API_BASE_URL } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,7 +102,7 @@ const Admin = () => {
   // Database health check
   const checkDatabaseHealth = async () => {
     try {
-      const res = await fetch('/api/health');
+      const res = await fetch(`${API_BASE_URL}/api/health`);
       if (res.ok) {
         setDbHealth({status: 'healthy', message: 'Backend API connected successfully'});
         return true;
@@ -118,7 +119,7 @@ const Admin = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        const response = await fetch('/api/auth/me');
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`);
         if (!response.ok) {
           // Not logged in at all
           window.location.href = '/auth?admin=true';
@@ -129,7 +130,7 @@ const Admin = () => {
         
         if (!sessionData.isAdmin) {
           // Not an admin
-          await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+          await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' }).catch(() => {});
           toast({
             title: "Access Denied",
             description: "You don't have admin privileges. Please use regular user login.",
@@ -242,7 +243,7 @@ const Admin = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products');
+      const res = await fetch(`${API_BASE_URL}/api/products`);
       const data = await res.json();
       setProducts(data as Product[] || []);
     } catch (error: any) {
@@ -253,7 +254,7 @@ const Admin = () => {
 
   const fetchCollections = async () => {
     try {
-      const res = await fetch('/api/collections');
+      const res = await fetch(`${API_BASE_URL}/api/collections`);
       const data = await res.json();
       setCollections(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -286,9 +287,9 @@ const Admin = () => {
   };
 
   const deleteCollection = async (id: string, name: string) => {
-    if (!confirm(`Delete collection "${name}"?\n\nThis will also CLEAR the collection field on all products in this collection — they will appear as uncategorized until you re-assign them.`)) return;
+    if (!confirm(`Delete collection "${name}"?\n\nThis will also CLEAR the collection field on all products in this collection � they will appear as uncategorized until you re-assign them.`)) return;
     try {
-      const res = await fetch(`/api/collections/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/collections/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).message || 'Delete failed');
       const data = await res.json();
       toast({ title: 'Collection deleted', description: `"${name}" removed. ${data._cascadeInfo || ''}` });
@@ -302,11 +303,11 @@ const Admin = () => {
   const syncProducts = async () => {
     if (!confirm('This will clear the collection field on all products whose collection no longer exists in the database. Continue?')) return;
     try {
-      const res = await fetch('/api/collections/sync-products', { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/collections/sync-products`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Sync failed');
       toast({
-        title: 'Sync complete ✓',
+        title: 'Sync complete ?',
         description: `${data.affected ?? 0} product(s) had stale collection names cleared.`,
       });
       fetchProducts();
@@ -328,10 +329,10 @@ const Admin = () => {
   const fetchStats = async () => {
     try {
       const [products, orders, emails, users] = await Promise.all([
-        fetch('/api/products').then(r => r.json()),
-        fetch('/api/orders').then(r => r.json()),
-        fetch('/api/emails').then(r => r.json()),
-        fetch('/api/users').then(r => r.json()),
+        fetch(`${API_BASE_URL}/api/products`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/api/orders`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/api/emails`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/api/users`).then(r => r.json()),
       ]);
       setStats({
         totalProducts: Array.isArray(products) ? products.length : 0,
@@ -346,7 +347,7 @@ const Admin = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('/api/orders');
+      const res = await fetch(`${API_BASE_URL}/api/orders`);
       const data = await res.json();
       setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -356,7 +357,7 @@ const Admin = () => {
 
   const fetchEmailSignups = async () => {
     try {
-      const res = await fetch('/api/emails');
+      const res = await fetch(`${API_BASE_URL}/api/emails`);
       const data = await res.json();
       setEmailSignups(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -366,7 +367,7 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/users');
+      const res = await fetch(`${API_BASE_URL}/api/users`);
       const data = await res.json();
       setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -376,7 +377,7 @@ const Admin = () => {
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -392,7 +393,7 @@ const Admin = () => {
   const handleDeleteOrder = async (orderId: string) => {
     if (!confirm('Are you sure you want to delete this order?')) return;
     try {
-      const res = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).message || 'Delete failed');
       toast({ title: "Order deleted", description: "Order has been removed successfully" });
       fetchOrders();
@@ -439,7 +440,7 @@ const Admin = () => {
   const deleteProduct = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
     try {
-      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/products/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to delete product');
       toast({ title: "Product deleted", description: "Product has been removed successfully." });
       fetchProducts();
@@ -511,7 +512,7 @@ const Admin = () => {
 
   const fetchSaleBanners = async () => {
     try {
-      const res = await fetch('/api/banners');
+      const res = await fetch(`${API_BASE_URL}/api/banners`);
       const data = await res.json();
       setSaleBanners(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -522,7 +523,7 @@ const Admin = () => {
   const handleBannerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/banners', {
+      const res = await fetch(`${API_BASE_URL}/api/banners`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bannerForm),
@@ -538,7 +539,7 @@ const Admin = () => {
 
   const toggleBannerStatus = async (id: string, currentStatus: boolean) => {
     try {
-      const res = await fetch(`/api/banners/${id}/toggle`, { method: 'PATCH' });
+      const res = await fetch(`${API_BASE_URL}/api/banners/${id}/toggle`, { method: 'PATCH' });
       if (!res.ok) throw new Error((await res.json()).message || 'Update failed');
       toast({ title: "Banner updated!", description: `Banner is now ${!currentStatus ? 'active' : 'inactive'}.` });
       fetchSaleBanners();
@@ -550,7 +551,7 @@ const Admin = () => {
   const deleteBanner = async (id: string) => {
     if (!confirm("Are you sure you want to delete this banner?")) return;
     try {
-      const res = await fetch(`/api/banners/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/banners/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).message || 'Delete failed');
       toast({ title: "Banner deleted!", description: "Banner has been permanently removed." });
       fetchSaleBanners();
@@ -576,7 +577,7 @@ const Admin = () => {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -613,7 +614,7 @@ const Admin = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="serif-heading text-4xl font-bold text-reforma-brown mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your R─ÆFORMA collection</p>
+          <p className="text-muted-foreground">Manage your R-�FORMA collection</p>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
@@ -749,7 +750,7 @@ const Admin = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="price">Price (Γé╣)</Label>
+                        <Label htmlFor="price">Price (G�)</Label>
                         <Input
                           id="price"
                           type="number"
@@ -793,7 +794,7 @@ const Admin = () => {
                         </SelectContent>
                       </Select>
                       {collections.length === 0 && (
-                        <p className="text-xs text-amber-600 mt-1">⚠ No collections yet — create one in the Collections tab first.</p>
+                        <p className="text-xs text-amber-600 mt-1">? No collections yet � create one in the Collections tab first.</p>
                       )}
                     </div>
 
@@ -1007,7 +1008,7 @@ const Admin = () => {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Γé╣{product.price || 0} ΓÇó {product.collection || "Unknown"} ΓÇó {product.stock || 0} in stock
+                            G�{product.price || 0} G�� {product.collection || "Unknown"} G�� {product.stock || 0} in stock
                           </p>
                           {(product.gsm_options || product.gsm) && (product.gsm_options || product.gsm).length > 0 && (
                             <p className="text-xs text-muted-foreground">
@@ -1046,7 +1047,7 @@ const Admin = () => {
             </div>
           </TabsContent>
 
-          {/* ── Collections Tab ─────────────────────────────────────────── */}
+          {/* -- Collections Tab ------------------------------------------- */}
           <TabsContent value="collections" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Collection Form */}
@@ -1221,7 +1222,7 @@ const Admin = () => {
                         
                         <div className="flex items-center justify-between pt-2 border-t">
                           <div>
-                            <p className="text-lg font-bold text-reforma-brown">Γé╣{Number(order.total_amount).toFixed(2)}</p>
+                            <p className="text-lg font-bold text-reforma-brown">G�{Number(order.total_amount).toFixed(2)}</p>
                             <p className="text-xs text-muted-foreground">
                               {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString()}
                             </p>

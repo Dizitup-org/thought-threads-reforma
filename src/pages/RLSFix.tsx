@@ -20,7 +20,7 @@ const RLSFix = () => {
     try {
       // Test if we can read products via API
       addLog("Testing read access...");
-      const readRes = await fetch('/api/rls-test/read');
+      const readRes = await fetch(`${API_BASE_URL}/api/rls-test/read`);
       
       if (!readRes.ok) {
         const errorMsg = await readRes.text();
@@ -40,7 +40,7 @@ const RLSFix = () => {
         description: 'Test for RLS fix'
       };
 
-      const insertRes = await fetch('/api/rls-test/insert', {
+      const insertRes = await fetch(`${API_BASE_URL}/api/rls-test/insert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(testProduct)

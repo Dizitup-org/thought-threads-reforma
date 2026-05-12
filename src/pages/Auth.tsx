@@ -1,5 +1,6 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_BASE_URL } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +25,7 @@ export default function Auth() {
     // Check if user is already logged in
     const checkUser = async () => {
       try {
-        const response = await fetch('/api/auth/me');
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`);
         if (response.ok) {
           const sessionData = await response.json();
           if (sessionData.isAdmin) {
@@ -81,7 +82,7 @@ export default function Auth() {
           navigate('/profile');
         }
       } else {
-        const response = await fetch('/api/auth/signup', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, name })
@@ -116,7 +117,7 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="serif-heading text-2xl text-reforma-brown">
-            {isAdminLogin ? 'Admin Login' : (isLogin ? 'Welcome Back' : 'Join R─ôForma')}
+            {isAdminLogin ? 'Admin Login' : (isLogin ? 'Welcome Back' : 'Join R-�Forma')}
           </CardTitle>
           <CardDescription>
             {isAdminLogin 

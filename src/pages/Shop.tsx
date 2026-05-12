@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from '@/lib/api';
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,7 +73,7 @@ const Shop = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products');
+      const response = await fetch(`${API_BASE_URL}/api/products`);
       if (!response.ok) throw new Error('Failed to fetch products');
       const data = await response.json();
       
@@ -97,7 +98,7 @@ const Shop = () => {
 
   const fetchCollections = async () => {
     try {
-      const response = await fetch('/api/collections');
+      const response = await fetch(`${API_BASE_URL}/api/collections`);
       if (!response.ok) throw new Error('Failed to fetch collections');
       const data = await response.json();
       

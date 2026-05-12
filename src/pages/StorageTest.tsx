@@ -26,7 +26,7 @@ const StorageTest = () => {
       formData.append('file', file, fileName);
       formData.append('path', filePath);
       
-      const response = await fetch('/api/storage/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/storage/upload`, {
         method: 'POST',
         body: formData,
       });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { API_BASE_URL } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +43,7 @@ const ProductDetail = () => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/products/${id}`);
+      const response = await fetch(`${API_BASE_URL}/api/products/${id}`);
       if (!response.ok) throw new Error('Failed to fetch product');
       const data = await response.json();
       

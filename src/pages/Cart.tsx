@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCart } from "@/hooks/useCart";
+import { API_BASE_URL } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,7 +52,7 @@ const Cart = () => {
 
   const loadAdminSettings = async () => {
     try {
-      const response = await fetch('/api/settings');
+      const response = await fetch(`${API_BASE_URL}/api/settings`);
       if (response.ok) {
         const data = await response.json();
         const phoneSetting = data.find((setting: any) => setting.setting_key === 'admin_phone');
@@ -66,7 +67,7 @@ const Cart = () => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/auth/me');
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`);
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
@@ -146,7 +147,7 @@ const Cart = () => {
           status: 'Pending'
         };
 
-        return fetch('/api/orders', {
+        return fetch(`${API_BASE_URL}/api/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(orderData)

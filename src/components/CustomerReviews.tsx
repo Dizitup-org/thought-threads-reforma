@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from '@/lib/api';
 import { Star, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -73,7 +74,7 @@ const ReviewForm = ({ onSuccess }: { onSuccess: () => void }) => {
       };
 
       // Prefer immediate visibility if the schema/policies allow it.
-      const response = await fetch('/api/reviews', {
+      const response = await fetch(`${API_BASE_URL}/api/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -174,7 +175,7 @@ const CustomerReviews = () => {
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch('/api/reviews');
+      const response = await fetch(`${API_BASE_URL}/api/reviews`);
       if (!response.ok) throw new Error('Failed to fetch reviews');
       
       const data = await response.json();

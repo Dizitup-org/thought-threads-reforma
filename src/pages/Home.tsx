@@ -1,5 +1,6 @@
-﻿import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from '@/lib/api';
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronLeft, ChevronRight, Search } from "lucide-react";
@@ -82,7 +83,7 @@ const Home = () => {
 
   const fetchFeaturedProducts = async () => {
     try {
-      const response = await fetch('/api/products?featured=true&limit=3');
+      const response = await fetch(`${API_BASE_URL}/api/products?featured=true&limit=3`);
       if (!response.ok) throw new Error('Failed to fetch featured products');
       const data = await response.json();
       setFeaturedProducts(data || []);
@@ -93,7 +94,7 @@ const Home = () => {
 
   const fetchLatestProducts = async () => {
     try {
-      const response = await fetch('/api/products?limit=6');
+      const response = await fetch(`${API_BASE_URL}/api/products?limit=6`);
       if (!response.ok) throw new Error('Failed to fetch latest products');
       const data = await response.json();
       setLatestProducts(data || []);
@@ -118,7 +119,7 @@ const Home = () => {
     featured: product.featured
   });
 
-  // Keep a consistent ΓÇ£subjectΓÇ¥ background (like the reference hero). The carousel is still real product data.
+  // Keep a consistent GǣsubjectGǥ background (like the reference hero). The carousel is still real product data.
   const heroBlurSrc = heroModelImage;
 
   return (
@@ -420,7 +421,7 @@ const Home = () => {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 viewport={{ once: true }}
               >
-                R─ÆFORMA represents the intersection of conscious design and sophisticated aesthetics. Each piece is thoughtfully crafted for those who understand that true luxury lies not in ostentation, but in the quiet confidence of knowing you've chosen well.
+                R-�FORMA represents the intersection of conscious design and sophisticated aesthetics. Each piece is thoughtfully crafted for those who understand that true luxury lies not in ostentation, but in the quiet confidence of knowing you've chosen well.
               </motion.p>
               <motion.p 
                 className="text-base sm:text-lg font-medium text-reforma-brown"

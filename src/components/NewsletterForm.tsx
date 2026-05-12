@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { API_BASE_URL } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 const NewsletterForm = () => {
@@ -32,7 +33,7 @@ const NewsletterForm = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/emails/subscribe', {
+      const response = await fetch(`${API_BASE_URL}/api/emails/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

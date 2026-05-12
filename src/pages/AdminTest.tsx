@@ -19,7 +19,7 @@ const AdminTest = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/admin/products');
+      const response = await fetch(`${API_BASE_URL}/api/admin/products`);
       if (!response.ok) throw new Error('Failed to fetch products');
       const data = await response.json();
       setProducts(data || []);
@@ -35,7 +35,7 @@ const AdminTest = () => {
 
   const createTestProduct = async () => {
     try {
-      const response = await fetch('/api/admin/products', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(testProduct)
@@ -63,7 +63,7 @@ const AdminTest = () => {
 
   const deleteProduct = async (id: string) => {
     try {
-      const response = await fetch(`/api/admin/products/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/products/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) {

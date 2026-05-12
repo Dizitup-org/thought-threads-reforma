@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from '@/lib/api';
 
 interface SaleBanner {
   id: string;
@@ -15,7 +16,7 @@ const SaleBanner = () => {
 
   const fetchBanners = async () => {
     try {
-      const response = await fetch('/api/banners');
+      const response = await fetch(`${API_BASE_URL}/api/banners`);
       if (!response.ok) throw new Error('Failed to fetch banners');
       
       const data: SaleBanner[] = await response.json();

@@ -8,7 +8,7 @@ const ConnectionTest = () => {
     // Test regular connection
     const testConnection = async () => {
       try {
-        const response = await fetch('/api/connection-test/regular');
+        const response = await fetch(`${API_BASE_URL}/api/connection-test/regular`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -21,7 +21,7 @@ const ConnectionTest = () => {
     // Test admin connection
     const testAdminConnection = async () => {
       try {
-        const response = await fetch('/api/connection-test/admin');
+        const response = await fetch(`${API_BASE_URL}/api/connection-test/admin`);
         if (!response.ok) {
           if (response.status === 404 || response.status === 401 || response.status === 403) {
             setAdminConnectionStatus("Admin API endpoint not available or unauthorized");

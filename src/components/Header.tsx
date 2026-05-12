@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from '@/lib/api';
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import { Menu, X, ShoppingBag, Settings, User, Shield, LogOut } from "lucide-react";
@@ -21,7 +22,7 @@ const Header = () => {
 
   const handleSignOut = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' });
     } catch(e) {
       console.error(e);
     }

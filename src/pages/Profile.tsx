@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,7 +67,7 @@ export default function Profile() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/me');
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`);
         if (!response.ok) {
           navigate("/auth");
           return;
@@ -93,13 +94,13 @@ export default function Profile() {
   const fetchUserData = async () => {
     try {
       // Fetch addresses
-      const addrRes = await fetch('/api/addresses');
+      const addrRes = await fetch(`${API_BASE_URL}/api/addresses`);
       if (addrRes.ok) {
         setAddresses(await addrRes.json());
       }
 
       // Fetch orders
-      const ordersRes = await fetch('/api/orders/my-orders');
+      const ordersRes = await fetch(`${API_BASE_URL}/api/orders/my-orders`);
       if (ordersRes.ok) {
         setOrders(await ordersRes.json());
       }
@@ -117,7 +118,7 @@ export default function Profile() {
 
   const handleSignOut = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' });
     } catch (e) {
       console.error(e);
     }
@@ -159,7 +160,7 @@ export default function Profile() {
 
   const deleteAddress = async (id: string) => {
     try {
-      const res = await fetch(`/api/addresses/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/addresses/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete address');
       
       toast({ title: "Address deleted successfully!" });
@@ -177,7 +178,7 @@ export default function Profile() {
     if (!user) return;
     
     try {
-      const res = await fetch(`/api/users/${user.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/users/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -241,11 +242,11 @@ export default function Profile() {
     }
     
     try {
-      const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/users/${user.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete account');
       
       // Logout and redirect
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' });
       toast({
         title: "Account deleted",
         description: "Your account has been permanently deleted",

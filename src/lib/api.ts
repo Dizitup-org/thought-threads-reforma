@@ -12,7 +12,7 @@ export interface ApiResponse<T = any> {
 
 // Determine the API base URL
 // VITE_API_URL must be set in Netlify env vars to your Render backend, e.g. https://reforma-backend.onrender.com
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export const API_BASE_URL: string = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Safe fetch wrapper - handles non-OK responses and non-JSON bodies without crashing
 async function safeFetch(url: string, options?: RequestInit): Promise<ApiResponse> {

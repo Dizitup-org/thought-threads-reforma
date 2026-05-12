@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface User {
   email: string;
@@ -27,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkSession = async () => {
     try {
-      const response = await fetch('/api/auth/me');
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`);
       if (response.ok) {
         const sessionData = await response.json();
         setUser(sessionData.user);

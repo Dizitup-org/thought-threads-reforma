@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { API_BASE_URL } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,7 +43,7 @@ export default function AddressSelector({ isOpen, onClose, onAddressSelected, us
 
   const fetchAddresses = async () => {
     try {
-      const response = await fetch('/api/addresses');
+      const response = await fetch(`${API_BASE_URL}/api/addresses`);
       if (!response.ok) throw new Error('Failed to fetch addresses');
       const data = await response.json();
       setAddresses(data || []);
@@ -53,7 +54,7 @@ export default function AddressSelector({ isOpen, onClose, onAddressSelected, us
 
   const saveNewAddress = async () => {
     try {
-      const response = await fetch('/api/addresses', {
+      const response = await fetch(`${API_BASE_URL}/api/addresses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newAddress, user_id: userId })

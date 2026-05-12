@@ -7,7 +7,7 @@ export default function DatabaseTest() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('/api/database-test/products');
+        const response = await fetch(`${API_BASE_URL}/api/database-test/products`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
