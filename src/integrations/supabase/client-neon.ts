@@ -23,20 +23,8 @@ export interface AuthResponse {
 }
 
 // Determine the API base URL
-const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    // Browser environment - for development use localhost:8080, for production use the actual domain
-    if (window.location.hostname === 'localhost') {
-      return 'http://localhost:8080';
-    } else {
-      return window.location.origin;
-    }
-  }
-  // Server environment
-  return process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : process.env.API_URL || 'http://localhost:8080';
-};
-
-const API_BASE_URL = getApiBaseUrl();
+// VITE_API_URL must be set in Netlify env vars to your Render backend, e.g. https://reforma-backend.onrender.com
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 console.log('🌍 API Base URL:', API_BASE_URL);
 

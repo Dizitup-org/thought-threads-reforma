@@ -23,16 +23,8 @@ export interface AuthResponse {
 }
 
 // Determine the API base URL
-const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    // Browser environment
-    return window.location.origin;
-  }
-  // Server environment - you might need to adjust this based on your deployment
-  return process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-};
-
-const API_BASE_URL = getApiBaseUrl();
+// VITE_API_URL must be set in Netlify env vars to your Render backend, e.g. https://reforma-backend.onrender.com
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Query builder interface to match Supabase's API
 class QueryBuilder {
