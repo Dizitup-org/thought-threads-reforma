@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Upload, Users, Package, Mail, Shield, User } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, Users, Package, Mail, Shield, User, FolderOpen, X, Check, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Global mock for Supabase to prevent the old functions from crashing the page
@@ -57,7 +57,11 @@ interface Product {
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [collections, setCollections] = useState<string[]>([]);
+  const [collections, setCollections] = useState<{id: string; name: string; description?: string}[]>([]);
+  // Collection CRUD state
+  const [collectionForm, setCollectionForm] = useState({ name: '', description: '' });
+  const [editingCollection, setEditingCollection] = useState<string | null>(null);
+  const [collectionLoading, setCollectionLoading] = useState(false);
   const [productForm, setProductForm] = useState({
     product_name: "",
     price: "",
@@ -251,10 +255,74 @@ const Admin = () => {
     try {
       const res = await fetch('/api/collections');
       const data = await res.json();
-      setCollections(data?.map((c: any) => c.name) || []);
+      setCollections(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching collections:', error);
     }
+  };
+
+  const handleCollectionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!collectionForm.name.trim()) return;
+    setCollectionLoading(true);
+    try {
+      const url = editingCollection ? `/api/collections/${editingCollection}` : '/api/collections';
+      const method = editingCollection ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: collectionForm.name.trim(), description: collectionForm.description.trim() || undefined }),
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Operation failed');
+      toast({ title: editingCollection ? 'Collection updated!' : 'Collection created!', description: `"${collectionForm.name}" saved successfully.` });
+      setCollectionForm({ name: '', description: '' });
+      setEditingCollection(null);
+      fetchCollections();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setCollectionLoading(false);
+    }
+  };
+
+  const deleteCollection = async (id: string, name: string) => {
+    if (!confirm(`Delete collection "${name}"?\n\nThis will also CLEAR the collection field on all products in this collection — they will appear as uncategorized until you re-assign them.`)) return;
+    try {
+      const res = await fetch(`/api/collections/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).message || 'Delete failed');
+      const data = await res.json();
+      toast({ title: 'Collection deleted', description: `"${name}" removed. ${data._cascadeInfo || ''}` });
+      fetchCollections();
+      fetchProducts(); // refresh product list since collection fields were cleared
+    } catch (error: any) {
+      toast({ title: 'Error deleting collection', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const syncProducts = async () => {
+    if (!confirm('This will clear the collection field on all products whose collection no longer exists in the database. Continue?')) return;
+    try {
+      const res = await fetch('/api/collections/sync-products', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Sync failed');
+      toast({
+        title: 'Sync complete ✓',
+        description: `${data.affected ?? 0} product(s) had stale collection names cleared.`,
+      });
+      fetchProducts();
+    } catch (error: any) {
+      toast({ title: 'Sync failed', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const startEditCollection = (col: {id: string; name: string; description?: string}) => {
+    setEditingCollection(col.id);
+    setCollectionForm({ name: col.name, description: col.description || '' });
+  };
+
+  const cancelEditCollection = () => {
+    setEditingCollection(null);
+    setCollectionForm({ name: '', description: '' });
   };
 
   const fetchStats = async () => {
@@ -549,9 +617,10 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="collections">Collections</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="emails">Email List</TabsTrigger>
@@ -716,13 +785,16 @@ const Admin = () => {
                           <SelectValue placeholder="Select collection" />
                         </SelectTrigger>
                         <SelectContent>
-                          {collections.map(collection => (
-                            <SelectItem key={collection} value={collection}>
-                              {collection}
+                          {collections.map(col => (
+                            <SelectItem key={col.id} value={col.name}>
+                              {col.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {collections.length === 0 && (
+                        <p className="text-xs text-amber-600 mt-1">⚠ No collections yet — create one in the Collections tab first.</p>
+                      )}
                     </div>
 
                     <div>
@@ -969,6 +1041,131 @@ const Admin = () => {
                       </div>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* ── Collections Tab ─────────────────────────────────────────── */}
+          <TabsContent value="collections" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Collection Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5" />
+                    {editingCollection ? 'Edit Collection' : 'New Collection'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleCollectionSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="col-name">Collection Name *</Label>
+                      <Input
+                        id="col-name"
+                        value={collectionForm.name}
+                        onChange={(e) => setCollectionForm(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g. Summer Essentials"
+                        required
+                        className="input-reforma"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="col-desc">Description (optional)</Label>
+                      <Textarea
+                        id="col-desc"
+                        value={collectionForm.description}
+                        onChange={(e) => setCollectionForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="A short description of this collection..."
+                        rows={3}
+                        className="input-reforma"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" className="btn-reforma flex-1" disabled={collectionLoading}>
+                        {collectionLoading ? 'Saving...' : editingCollection ? 'Update Collection' : 'Create Collection'}
+                      </Button>
+                      {editingCollection && (
+                        <Button type="button" variant="outline" onClick={cancelEditCollection} className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Collections List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center justify-between">
+                    <span>All Collections</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={syncProducts}
+                        className="border-amber-400 text-amber-700 hover:bg-amber-50 text-xs flex items-center gap-1.5"
+                        title="Fix stale product collection names"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Sync Products
+                      </Button>
+                      <Badge variant="secondary" className="badge-reforma">{collections.length} Total</Badge>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {collections.length === 0 ? (
+                    <div className="text-center py-12 space-y-2">
+                      <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto" />
+                      <p className="text-muted-foreground">No collections yet. Create your first one!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                      {collections.map(col => (
+                        <div
+                          key={col.id}
+                          className={`flex items-start justify-between p-4 rounded-lg border transition-colors ${
+                            editingCollection === col.id
+                              ? 'border-reforma-brown bg-reforma-brown/5'
+                              : 'border-border hover:border-reforma-brown/40'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <FolderOpen className="h-4 w-4 text-reforma-brown shrink-0" />
+                              <h4 className="font-semibold text-reforma-brown truncate">{col.name}</h4>
+                              {editingCollection === col.id && (
+                                <Badge variant="secondary" className="text-xs">Editing</Badge>
+                              )}
+                            </div>
+                            {col.description && (
+                              <p className="text-sm text-muted-foreground mt-1 ml-6 line-clamp-2">{col.description}</p>
+                            )}
+                          </div>
+                          <div className="flex gap-2 ml-3 shrink-0">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => startEditCollection(col)}
+                              className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteCollection(col.id, col.name)}
+                              className="border-destructive text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
