@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+﻿import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,8 +36,6 @@ const Home = () => {
   useEffect(() => {
     fetchFeaturedProducts();
     fetchLatestProducts();
-<<<<<<< HEAD
-=======
     
     // Set up real-time subscription (commented out until backend WebSocket/SSE is ready)
     /*
@@ -60,7 +58,6 @@ const Home = () => {
       supabase.removeChannel(channel);
     };
     */
->>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
   }, []);
 
   useEffect(() => {
@@ -91,7 +88,6 @@ const Home = () => {
       setFeaturedProducts(data || []);
     } catch (error) {
       console.error('Error fetching featured products:', error);
-      setFeaturedProducts([]);
     }
   };
 
@@ -103,7 +99,6 @@ const Home = () => {
       setLatestProducts(data || []);
     } catch (error) {
       console.error('Error fetching latest products:', error);
-      setLatestProducts([]);
     }
   };
 
@@ -123,7 +118,7 @@ const Home = () => {
     featured: product.featured
   });
 
-  // Keep a consistent “subject” background (like the reference hero). The carousel is still real product data.
+  // Keep a consistent "subject" background (like the reference hero). The carousel is still real product data.
   const heroBlurSrc = heroModelImage;
 
   return (
@@ -425,7 +420,7 @@ const Home = () => {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 viewport={{ once: true }}
               >
-                RĒFORMA represents the intersection of conscious design and sophisticated aesthetics. Each piece is thoughtfully crafted for those who understand that true luxury lies not in ostentation, but in the quiet confidence of knowing you've chosen well.
+                RēForma represents the intersection of conscious design and sophisticated aesthetics. Each piece is thoughtfully crafted for those who understand that true luxury lies not in ostentation, but in the quiet confidence of knowing you've chosen well.
               </motion.p>
               <motion.p 
                 className="text-base sm:text-lg font-medium text-reforma-brown"

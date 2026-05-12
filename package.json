@@ -46,16 +46,6 @@
     "@tanstack/react-query": "^5.83.0",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
-<<<<<<< HEAD
-    "cloudinary": "^2.9.0",
-    "clsx": "^2.1.1",
-    "cmdk": "^1.1.1",
-    "cors": "^2.8.6",
-    "date-fns": "^3.6.0",
-    "dotenv": "^17.3.1",
-    "embla-carousel-react": "^8.6.0",
-    "express": "^5.2.1",
-=======
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -65,7 +55,6 @@
     "dotenv": "^16.4.7",
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
->>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
     "framer-motion": "^12.23.24",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
@@ -90,13 +79,10 @@
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/bcrypt": "^6.0.0",
-<<<<<<< HEAD
-=======
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.1.0",
->>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
     "@types/node": "^22.16.5",
     "@types/pg": "^8.20.0",
     "@types/react": "^18.3.23",

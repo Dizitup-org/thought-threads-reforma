@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import { Menu, X, ShoppingBag, Settings, User, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,30 +15,9 @@ import {
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, isAdmin, logout } = useAuth();
   const { totalItems } = useCart();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check active session via backend API
-    const checkSession = async () => {
-      try {
-        const response = await fetch('/api/auth/me');
-        if (response.ok) {
-          const sessionData = await response.json();
-          setUser(sessionData.user);
-          setUserProfile(sessionData.profile);
-          setIsAdmin(sessionData.isAdmin);
-        }
-      } catch (error) {
-        console.error("Auth check failed", error);
-      }
-    };
-
-    checkSession();
-  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -45,9 +25,7 @@ const Header = () => {
     } catch(e) {
       console.error(e);
     }
-    setUser(null);
-    setUserProfile(null);
-    setIsAdmin(false);
+    logout();
     navigate('/');
   };
 
@@ -160,13 +138,12 @@ const Header = () => {
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="border-reforma-sage text-reforma-brown hover:bg-reforma-sage/10 gap-2">
                         <Avatar className="h-6 w-6">
-                          <AvatarImage src={userProfile?.avatar_url || undefined} alt={userProfile?.name || 'User'} />
                           <AvatarFallback className="bg-reforma-sage text-xs">
-                            {(userProfile?.name || user.email || 'U').charAt(0).toUpperCase()}
+                            {(user.name || user.email || 'U').charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <span className="hidden sm:inline">
-                          {userProfile?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Profile'}
+                          {user.name || user.email?.split('@')[0] || 'Profile'}
                         </span>
                       </Button>
                     </DropdownMenuTrigger>

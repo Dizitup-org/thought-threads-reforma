@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -166,9 +166,6 @@ const Admin = () => {
     fetchEmailSignups();
     fetchUsers();
     
-<<<<<<< HEAD
-    // Real-time subscriptions removed - using simple data refresh pattern
-=======
     // Real-time subscriptions disabled until web sockets are implemented
     /*
     const productsChannel = supabase
@@ -241,7 +238,6 @@ const Admin = () => {
       supabase.removeChannel(usersChannel);
     };
     */
->>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
   }, []);
 
   const fetchProducts = async () => {
@@ -251,16 +247,7 @@ const Admin = () => {
       setProducts(data as Product[] || []);
     } catch (error: any) {
       console.error('Error fetching products:', error);
-<<<<<<< HEAD
-      setProducts([]);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load products",
-        variant: "destructive",
-      });
-=======
       toast({ title: "Error", description: error.message || "Failed to load products", variant: "destructive" });
->>>>>>> 4da70c100a89228ca868e4a11a5f9fd8eb1ef97b
     }
   };
 
@@ -271,7 +258,6 @@ const Admin = () => {
       setCollections(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching collections:', error);
-      setCollections([]);
     }
   };
 
@@ -355,12 +341,6 @@ const Admin = () => {
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
-      setStats({
-        totalProducts: 0,
-        totalOrders: 0,
-        emailSignups: 0,
-        totalUsers: 0
-      });
     }
   };
 
@@ -371,7 +351,6 @@ const Admin = () => {
       setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching orders:', error);
-      setOrders([]);
     }
   };
 
@@ -382,7 +361,6 @@ const Admin = () => {
       setEmailSignups(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching email signups:', error);
-      setEmailSignups([]);
     }
   };
 
@@ -393,7 +371,6 @@ const Admin = () => {
       setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching users:', error);
-      setUsers([]);
     }
   };
 
@@ -539,7 +516,6 @@ const Admin = () => {
       setSaleBanners(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching sale banners:', error);
-      setSaleBanners([]);
     }
   };
 
@@ -637,7 +613,7 @@ const Admin = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="serif-heading text-4xl font-bold text-reforma-brown mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your RĒFORMA collection</p>
+          <p className="text-muted-foreground">Manage your RēForma collection</p>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
