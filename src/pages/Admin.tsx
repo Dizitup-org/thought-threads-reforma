@@ -118,10 +118,22 @@ const Admin = () => {
   // Check if current user is an admin
   useEffect(() => {
     const checkAdminStatus = async () => {
+      // First check localStorage (cross-origin reliable, set after login)
+      const stored = localStorage.getItem('auth');
+      if (stored) {
+        try {
+          const { isAdmin: storedIsAdmin } = JSON.parse(stored);
+          if (storedIsAdmin) {
+            setIsAuthenticated(true);
+            return;
+          }
+        } catch {}
+      }
+
+      // Fallback: cookie-based check
       try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`);
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
         if (!response.ok) {
-          // Not logged in at all
           window.location.href = '/auth?admin=true';
           return;
         }
@@ -129,8 +141,7 @@ const Admin = () => {
         const sessionData = await response.json();
         
         if (!sessionData.isAdmin) {
-          // Not an admin
-          await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' }).catch(() => {});
+          await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
           toast({
             title: "Access Denied",
             description: "You don't have admin privileges. Please use regular user login.",

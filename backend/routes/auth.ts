@@ -75,12 +75,12 @@ router.post('/admin-login', async (req: Request, res: Response) => {
       res.cookie('auth_session', email, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       });
       res.cookie('auth_role', 'admin', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       });
       return res.status(200).json({
         message: 'Login successful',
@@ -143,12 +143,12 @@ router.post('/login', async (req: Request, res: Response) => {
     res.cookie('auth_session', email, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
     res.cookie('auth_role', 'user', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
 
     return res.status(200).json({

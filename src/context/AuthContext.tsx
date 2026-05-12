@@ -28,7 +28,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkSession = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/me`);
+      // First try localStorage — set after login, works cross-origin
+      const stored = localStorage.getItem('auth');
+      if (stored) {
+        const { user: u, isAdmin: a, profile: p } = JSON.parse(stored);
+        setUser(u);
+        setIsAdmin(a || false);
+        setProfile(p || null);
+        setLoading(false);
+        return;
+      }
+      // Fallback: cookie-based check (same-origin / dev)
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
       if (response.ok) {
         const sessionData = await response.json();
         setUser(sessionData.user);
@@ -43,9 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    localStorage.removeItem('auth');
     setUser(null);
     setProfile(null);
     setIsAdmin(false);
+    fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
   };
 
   // Check session on mount

@@ -25,7 +25,7 @@ export default function Auth() {
     // Check if user is already logged in
     const checkUser = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`);
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
         if (response.ok) {
           const sessionData = await response.json();
           if (sessionData.isAdmin) {
@@ -58,6 +58,7 @@ export default function Auth() {
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ email, password })
         });
         
@@ -67,6 +68,13 @@ export default function Auth() {
         }
         const data = await response.json();
         
+        // Save to localStorage for cross-origin session persistence
+        localStorage.setItem('auth', JSON.stringify({
+          user: { email, name: data.user?.name || email },
+          isAdmin: data.isAdmin || false,
+          profile: data.user || null,
+        }));
+
         // Update auth context immediately
         setUser({ email, name: data.user?.name || email });
         setIsAdmin(data.isAdmin || false);
@@ -85,6 +93,7 @@ export default function Auth() {
         const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ email, password, name })
         });
         

@@ -66,8 +66,27 @@ export default function Profile() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Check localStorage first (cross-origin reliable)
+      const stored = localStorage.getItem('auth');
+      if (stored) {
+        try {
+          const { user: u, profile } = JSON.parse(stored);
+          if (u) {
+            const userData = profile || u;
+            setUser(userData);
+            setProfileForm({
+              name: userData.name || "",
+              email: userData.email || "",
+              phone: userData.phone || ""
+            });
+            fetchUserData();
+            return;
+          }
+        } catch {}
+      }
+
       try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`);
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
         if (!response.ok) {
           navigate("/auth");
           return;
@@ -118,7 +137,8 @@ export default function Profile() {
 
   const handleSignOut = async () => {
     try {
-      await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' });
+      localStorage.removeItem('auth');
+      await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch (e) {
       console.error(e);
     }
@@ -246,7 +266,8 @@ export default function Profile() {
       if (!res.ok) throw new Error('Failed to delete account');
       
       // Logout and redirect
-      await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' });
+      localStorage.removeItem('auth');
+      await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
       toast({
         title: "Account deleted",
         description: "Your account has been permanently deleted",
