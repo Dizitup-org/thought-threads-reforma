@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:server": "node server/index.js",
+    "dev:server": "node backend/server.js",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start:backend": "npx tsx src/lib/backend.ts",
+    "start:backend": "npx tsx --env-file=.env backend/index.ts",
     "backend": "npx tsx --env-file=.env backend/index.ts"
   },
   "dependencies": {
