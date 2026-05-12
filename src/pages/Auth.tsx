@@ -54,7 +54,7 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const url = isAdminLogin ? '/api/auth/admin-login' : '/api/auth/login';
+        const url = isAdminLogin ? `${API_BASE_URL}/api/auth/admin-login` : `${API_BASE_URL}/api/auth/login`;
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
