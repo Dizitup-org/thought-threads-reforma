@@ -49,6 +49,14 @@ const Shop = () => {
   const [allGsms, setAllGsms] = useState<number[]>([]);
   const [searchParams] = useSearchParams();
   const featuredOnly = searchParams.get("featured") === "true";
+  const collectionParam = searchParams.get("collection") || "all";
+
+  // Sync URL collection param into selected collection state on mount
+  useEffect(() => {
+    if (collectionParam !== "all") {
+      setSelectedCollection(collectionParam);
+    }
+  }, [collectionParam]);
 
   // Available GSM options as per requirements
   const gsmOptions = [180, 210, 220, 240];

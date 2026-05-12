@@ -123,9 +123,11 @@ const ProductCard = ({ product, showQuickActions = false }: ProductCardProps) =>
               )}
               
               <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-                <Badge variant="secondary" className="bg-white/90 text-reforma-brown border-border/50 backdrop-blur-sm luxury-tag shadow-md">
-                  {product.collection}
-                </Badge>
+                {product.collection && product.collection.trim() !== '' && (
+                  <Badge variant="secondary" className="bg-white/90 text-reforma-brown border-border/50 backdrop-blur-sm luxury-tag shadow-md">
+                    {product.collection}
+                  </Badge>
+                )}
                 {product.tags && product.tags.map((tag, index) => (
                   <div key={tag}>
                     <Badge 

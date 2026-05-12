@@ -288,7 +288,7 @@ Contrast: White #FFFFFF for clarity.
     background: linear-gradient(135deg, hsl(var(--accent) / 0.08), transparent 60%);
     opacity: 0;
     transition: opacity 0.5s ease;
-    z-index: 1;
+    z-index: 0;
     pointer-events: none;
   }
   
@@ -577,6 +577,17 @@ Contrast: White #FFFFFF for clarity.
 }
 
 @layer utilities {
+  /* Shimmer wave for skeleton loaders */
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .shimmer-wave {
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--muted-foreground) / 0.08) 50%, transparent 100%);
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
   /* RēForma Animations */
   @keyframes fade-in-reforma {
     from {
@@ -790,7 +801,8 @@ Contrast: White #FFFFFF for clarity.
     background: linear-gradient(135deg, hsl(var(--accent) / 0.1), transparent);
     opacity: 0;
     transition: opacity 0.4s ease;
-    z-index: 1;
+    z-index: 0;
+    pointer-events: none;
   }
   
   .product-card:hover {
@@ -847,11 +859,9 @@ Contrast: White #FFFFFF for clarity.
     transform: translateY(0);
   }
   
-  /* Luxury Section Transitions */
+  /* Luxury Section Transitions — DO NOT hide sections; let framer-motion handle animation */
   section {
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fade-in-up 0.8s forwards;
+    /* removed opacity:0 + animation — was blocking pointer-events and clicks */
   }
   
   @keyframes fade-in-up {

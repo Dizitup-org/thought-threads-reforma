@@ -4,18 +4,27 @@ import pool from '../db.js';
 const router = Router();
 
 // ── GET /api/products ────────────────────────────────────────────────────────
+// LEFT JOIN with collections so the returned `collection` field always reflects
+// the LIVE collection name. If the collection was deleted, c.name is NULL and
+// the badge simply won't render on the frontend.
 router.get('/', async (req: Request, res: Response) => {
   const { featured, limit } = req.query;
 
   try {
-    let query = 'SELECT * FROM products';
+    let query = `
+      SELECT
+        p.*,
+        c.name AS collection
+      FROM products p
+      LEFT JOIN collections c ON c.name = p.collection
+    `;
     const params: any[] = [];
 
     if (featured === 'true') {
-      query += ' WHERE featured = TRUE';
+      query += ' WHERE p.featured = TRUE';
     }
 
-    query += ' ORDER BY created_at DESC';
+    query += ' ORDER BY p.created_at DESC';
 
     if (limit) {
       params.push(parseInt(limit as string));
@@ -33,7 +42,13 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const { rows } = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+    const { rows } = await pool.query(
+      `SELECT p.*, c.name AS collection
+         FROM products p
+         LEFT JOIN collections c ON c.name = p.collection
+        WHERE p.id = $1`,
+      [id],
+    );
     if (rows.length === 0) return res.status(404).json({ message: 'Product not found' });
     return res.status(200).json(rows[0]);
   } catch (err: any) {
