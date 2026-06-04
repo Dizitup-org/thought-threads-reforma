@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mail, MessageCircle, Instagram, Twitter, Clock, MapPin } from "lucide-react";
+import { Mail, MessageCircle, Instagram, Facebook, Clock, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Contact = () => {
@@ -70,28 +70,28 @@ const Contact = () => {
     {
       icon: Mail,
       title: "Email Us",
-      description: "hello@reforma.store",
-      action: "mailto:hello@reforma.store"
+      description: "wearreforma@gmail.com",
+      action: "mailto:wearreforma@gmail.com"
     },
     {
       icon: MessageCircle,
       title: "WhatsApp",
-      description: "+1 (555) 123-4567",
-      action: "https://wa.me/15551234567"
+      description: "+91 6289 702 019",
+      action: "https://wa.me/916289702019"
     },
     {
       icon: Instagram,
       title: "Instagram",
-      description: "@reforma.threads",
-      action: "https://instagram.com/reforma.threads"
+      description: "@wear.reforma",
+      action: "https://ig.me/m/wear.reforma"
     },
     {
-      icon: Twitter,
-      title: "Twitter",
-      description: "@RēFormaThreads",
-      action: "https://twitter.com/RēFormaThreads"
+      icon: Facebook,
+      title: "Facebook",
+      description: "Wear Reforma",
+      action: "https://www.facebook.com/share/17ZfH56gRm/"
     }
-  ];
+  ] as const;
 
   return (
     <div className="min-h-screen pt-24 pb-12">
@@ -208,8 +208,8 @@ const Contact = () => {
                     <a
                       key={info.title}
                       href={info.action}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target={info.action.startsWith("mailto:") ? undefined : "_blank"}
+                      rel={info.action.startsWith("mailto:") ? undefined : "noopener noreferrer"}
                       className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:border-primary transition-colors group"
                     >
                       <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
