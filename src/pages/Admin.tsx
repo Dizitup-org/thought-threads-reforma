@@ -67,10 +67,11 @@ const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
-  // Collection CRUD state
-  const [collectionForm, setCollectionForm] = useState({ name: '', description: '', parentId: '' });
+  const [parentCollectionForm, setParentCollectionForm] = useState({ name: '', description: '' });
+  const [subCollectionForm, setSubCollectionForm] = useState({ name: '', description: '', parentId: '' });
+  const [editCollectionForm, setEditCollectionForm] = useState({ name: '', description: '', parentId: '' });
   const [editingCollection, setEditingCollection] = useState<string | null>(null);
-  const [collectionLoading, setCollectionLoading] = useState(false);
+  const [collectionLoadingTarget, setCollectionLoadingTarget] = useState<"parent" | "sub" | "edit" | null>(null);
   const [selectedParentCollectionId, setSelectedParentCollectionId] = useState("");
   const [productForm, setProductForm] = useState({
     product_name: "",
@@ -114,12 +115,10 @@ const Admin = () => {
     : [];
   const availableParentCollections = topLevelCollections.filter((collection) => collection.id !== editingCollection);
   const selectedSubCollectionId = childCollections.find((collection) => collection.name === productForm.collection)?.id ?? "__main__";
-  const collectionRows = topLevelCollections.flatMap((collection) => [
-    { ...collection, level: 0 },
-    ...collections
-      .filter((candidate) => candidate.parent_id === collection.id)
-      .map((candidate) => ({ ...candidate, level: 1 })),
-  ]);
+  const collectionGroups = topLevelCollections.map((collection) => ({
+    ...collection,
+    children: collections.filter((candidate) => candidate.parent_id === collection.id),
+  }));
 
   // Database health check
   const checkDatabaseHealth = async () => {
@@ -295,34 +294,68 @@ const Admin = () => {
     }
   };
 
-  const handleCollectionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!collectionForm.name.trim()) return;
-    setCollectionLoading(true);
+  const submitCollection = async (
+    form: { name: string; description: string; parentId?: string },
+    target: "parent" | "sub" | "edit",
+    editingId?: string | null,
+  ) => {
+    if (!form.name.trim()) return;
+
+    setCollectionLoadingTarget(target);
     try {
-      const url = editingCollection
-        ? `${API_BASE_URL}/api/collections/${editingCollection}`
+      const url = editingId
+        ? `${API_BASE_URL}/api/collections/${editingId}`
         : `${API_BASE_URL}/api/collections`;
-      const method = editingCollection ? 'PUT' : 'POST';
+      const method = editingId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: collectionForm.name.trim(),
-          description: collectionForm.description.trim() || undefined,
-          parentId: collectionForm.parentId || undefined,
+          name: form.name.trim(),
+          description: form.description.trim() || undefined,
+          parentId: form.parentId || undefined,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).message || 'Operation failed');
-      toast({ title: editingCollection ? 'Collection updated!' : 'Collection created!', description: `"${collectionForm.name}" saved successfully.` });
-      setCollectionForm({ name: '', description: '', parentId: '' });
-      setEditingCollection(null);
+      toast({
+        title: editingId ? 'Collection updated!' : target === 'parent' ? 'Parent collection created!' : 'Sub-collection created!',
+        description: `"${form.name}" saved successfully.`,
+      });
+
+      if (target === 'parent') {
+        setParentCollectionForm({ name: '', description: '' });
+      }
+
+      if (target === 'sub') {
+        setSubCollectionForm((prev) => ({ ...prev, name: '', description: '' }));
+      }
+
+      if (target === 'edit') {
+        setEditCollectionForm({ name: '', description: '', parentId: '' });
+        setEditingCollection(null);
+      }
+
       fetchCollections();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
-      setCollectionLoading(false);
+      setCollectionLoadingTarget(null);
     }
+  };
+
+  const handleParentCollectionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitCollection(parentCollectionForm, 'parent');
+  };
+
+  const handleSubCollectionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitCollection(subCollectionForm, 'sub');
+  };
+
+  const handleEditCollectionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitCollection(editCollectionForm, 'edit', editingCollection);
   };
 
   const deleteCollection = async (id: string, name: string) => {
@@ -357,12 +390,12 @@ const Admin = () => {
 
   const startEditCollection = (col: Collection) => {
     setEditingCollection(col.id);
-    setCollectionForm({ name: col.name, description: col.description || '', parentId: col.parent_id || '' });
+    setEditCollectionForm({ name: col.name, description: col.description || '', parentId: col.parent_id || '' });
   };
 
   const cancelEditCollection = () => {
     setEditingCollection(null);
-    setCollectionForm({ name: '', description: '', parentId: '' });
+    setEditCollectionForm({ name: '', description: '', parentId: '' });
   };
 
   const fetchStats = async () => {
@@ -1139,43 +1172,139 @@ const Admin = () => {
 
           {/* -- Collections Tab ------------------------------------------- */}
           <TabsContent value="collections" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Collection Form */}
+            {editingCollection && (
               <Card>
                 <CardHeader>
                   <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center gap-2">
                     <FolderOpen className="h-5 w-5" />
-                    {editingCollection ? 'Edit Collection' : 'New Collection'}
+                    Edit Collection
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleCollectionSubmit} className="space-y-4">
+                  <form onSubmit={handleEditCollectionSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-col-name">Collection Name *</Label>
+                        <Input
+                          id="edit-col-name"
+                          value={editCollectionForm.name}
+                          onChange={(e) => setEditCollectionForm((prev) => ({ ...prev, name: e.target.value }))}
+                          placeholder="e.g. Drop 01"
+                          required
+                          className="input-reforma"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-col-parent">Parent Collection</Label>
+                        <Select
+                          value={editCollectionForm.parentId || "__root__"}
+                          onValueChange={(value) => setEditCollectionForm((prev) => ({
+                            ...prev,
+                            parentId: value === "__root__" ? '' : value,
+                          }))}
+                        >
+                          <SelectTrigger id="edit-col-parent" className="input-reforma">
+                            <SelectValue placeholder="No parent collection" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__root__">No parent collection</SelectItem>
+                            {availableParentCollections.map((collection) => (
+                              <SelectItem key={collection.id} value={collection.id}>
+                                {collection.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     <div>
-                      <Label htmlFor="col-name">Collection Name *</Label>
+                      <Label htmlFor="edit-col-desc">Description (optional)</Label>
+                      <Textarea
+                        id="edit-col-desc"
+                        value={editCollectionForm.description}
+                        onChange={(e) => setEditCollectionForm((prev) => ({ ...prev, description: e.target.value }))}
+                        placeholder="Update the description for this collection..."
+                        rows={3}
+                        className="input-reforma"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" className="btn-reforma flex-1" disabled={collectionLoadingTarget === 'edit'}>
+                        {collectionLoadingTarget === 'edit' ? 'Saving...' : 'Update Collection'}
+                      </Button>
+                      <Button type="button" variant="outline" onClick={cancelEditCollection} className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5" />
+                    Create Parent Collection
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleParentCollectionSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="parent-col-name">Parent Collection Name *</Label>
                       <Input
-                        id="col-name"
-                        value={collectionForm.name}
-                        onChange={(e) => setCollectionForm(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="e.g. Summer Essentials"
+                        id="parent-col-name"
+                        value={parentCollectionForm.name}
+                        onChange={(e) => setParentCollectionForm((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g. Drop Series"
                         required
                         className="input-reforma"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="col-parent">Parent Collection</Label>
+                      <Label htmlFor="parent-col-desc">Description (optional)</Label>
+                      <Textarea
+                        id="parent-col-desc"
+                        value={parentCollectionForm.description}
+                        onChange={(e) => setParentCollectionForm((prev) => ({ ...prev, description: e.target.value }))}
+                        placeholder="Describe the main collection..."
+                        rows={3}
+                        className="input-reforma"
+                      />
+                    </div>
+                    <Button type="submit" className="btn-reforma w-full" disabled={collectionLoadingTarget === 'parent'}>
+                      {collectionLoadingTarget === 'parent' ? 'Saving...' : 'Create Parent Collection'}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5" />
+                    Create Sub-Collection
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubCollectionSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="sub-col-parent">Parent Collection *</Label>
                       <Select
-                        value={collectionForm.parentId || "__root__"}
-                        onValueChange={(value) => setCollectionForm(prev => ({
+                        value={subCollectionForm.parentId || "__select__"}
+                        onValueChange={(value) => setSubCollectionForm((prev) => ({
                           ...prev,
-                          parentId: value === "__root__" ? '' : value,
+                          parentId: value === "__select__" ? '' : value,
                         }))}
+                        disabled={topLevelCollections.length === 0}
                       >
-                        <SelectTrigger id="col-parent" className="input-reforma">
-                          <SelectValue placeholder="Top-level collection" />
+                        <SelectTrigger id="sub-col-parent" className="input-reforma">
+                          <SelectValue placeholder="Choose parent collection" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__root__">Top-level collection</SelectItem>
-                          {availableParentCollections.map((collection) => (
+                          <SelectItem value="__select__">Choose parent collection</SelectItem>
+                          {topLevelCollections.map((collection) => (
                             <SelectItem key={collection.id} value={collection.id}>
                               {collection.name}
                             </SelectItem>
@@ -1183,94 +1312,91 @@ const Admin = () => {
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Use this when creating a sub-collection such as Summer Drop 01 inside a main collection like Drop 01.
+                        Create multiple sub-collections like Drop 01, Drop 02, or Summer Drop 01 under any parent collection.
                       </p>
                     </div>
                     <div>
-                      <Label htmlFor="col-desc">Description (optional)</Label>
-                      <Textarea
-                        id="col-desc"
-                        value={collectionForm.description}
-                        onChange={(e) => setCollectionForm(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="A short description of this collection..."
-                        rows={3}
+                      <Label htmlFor="sub-col-name">Sub-Collection Name *</Label>
+                      <Input
+                        id="sub-col-name"
+                        value={subCollectionForm.name}
+                        onChange={(e) => setSubCollectionForm((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g. Drop 01"
+                        required
                         className="input-reforma"
+                        disabled={topLevelCollections.length === 0}
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Button type="submit" className="btn-reforma flex-1" disabled={collectionLoading}>
-                        {collectionLoading ? 'Saving...' : editingCollection ? 'Update Collection' : 'Create Collection'}
-                      </Button>
-                      {editingCollection && (
-                        <Button type="button" variant="outline" onClick={cancelEditCollection} className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5">
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
+                    <div>
+                      <Label htmlFor="sub-col-desc">Description (optional)</Label>
+                      <Textarea
+                        id="sub-col-desc"
+                        value={subCollectionForm.description}
+                        onChange={(e) => setSubCollectionForm((prev) => ({ ...prev, description: e.target.value }))}
+                        placeholder="Describe this sub-collection..."
+                        rows={3}
+                        className="input-reforma"
+                        disabled={topLevelCollections.length === 0}
+                      />
                     </div>
+                    {topLevelCollections.length === 0 && (
+                      <p className="text-sm text-amber-700">Create a parent collection first, then add sub-collections under it.</p>
+                    )}
+                    <Button type="submit" className="btn-reforma w-full" disabled={collectionLoadingTarget === 'sub' || topLevelCollections.length === 0 || !subCollectionForm.parentId}>
+                      {collectionLoadingTarget === 'sub' ? 'Saving...' : 'Create Sub-Collection'}
+                    </Button>
                   </form>
                 </CardContent>
               </Card>
+            </div>
 
-              {/* Collections List */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center justify-between">
-                    <span>All Collections</span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={syncProducts}
-                        className="border-amber-400 text-amber-700 hover:bg-amber-50 text-xs flex items-center gap-1.5"
-                        title="Fix stale product collection names"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        Sync Products
-                      </Button>
-                      <Badge variant="secondary" className="badge-reforma">{collections.length} Total</Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {collections.length === 0 ? (
-                    <div className="text-center py-12 space-y-2">
-                      <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto" />
-                      <p className="text-muted-foreground">No collections yet. Create your first one!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                      {collectionRows.map(col => (
-                        <div
-                          key={col.id}
-                          className={`flex items-start justify-between p-4 rounded-lg border transition-colors ${
-                            editingCollection === col.id
-                              ? 'border-reforma-brown bg-reforma-brown/5'
-                              : 'border-border hover:border-reforma-brown/40'
-                          } ${col.level === 1 ? 'ml-6 border-l-4 border-l-reforma-brown/30' : ''}`}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="serif-heading text-xl text-reforma-brown flex items-center justify-between">
+                  <span>Collection Structure</span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={syncProducts}
+                      className="border-amber-400 text-amber-700 hover:bg-amber-50 text-xs flex items-center gap-1.5"
+                      title="Fix stale product collection names"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Sync Products
+                    </Button>
+                    <Badge variant="secondary" className="badge-reforma">{collections.length} Total</Badge>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {collections.length === 0 ? (
+                  <div className="text-center py-12 space-y-2">
+                    <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto" />
+                    <p className="text-muted-foreground">No collections yet. Create your first parent collection and then add sub-collections under it.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                    {collectionGroups.map((group) => (
+                      <div key={group.id} className={`rounded-xl border p-4 space-y-4 ${editingCollection === group.id ? 'border-reforma-brown bg-reforma-brown/5' : 'border-border'}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <FolderOpen className="h-4 w-4 text-reforma-brown shrink-0" />
-                              <h4 className="font-semibold text-reforma-brown truncate">{col.name}</h4>
-                              {col.level === 1 && (
-                                <Badge variant="outline" className="text-xs">Sub-collection</Badge>
-                              )}
-                              {editingCollection === col.id && (
-                                <Badge variant="secondary" className="text-xs">Editing</Badge>
-                              )}
+                              <h4 className="font-semibold text-reforma-brown truncate">{group.name}</h4>
+                              <Badge variant="secondary" className="text-xs">Parent</Badge>
+                              <Badge variant="outline" className="text-xs">{group.children.length} sub-collections</Badge>
+                              {editingCollection === group.id && <Badge variant="secondary" className="text-xs">Editing</Badge>}
                             </div>
-                            {col.parent_name && (
-                              <p className="text-xs text-muted-foreground mt-1 ml-6">Inside {col.parent_name}</p>
-                            )}
-                            {col.description && (
-                              <p className="text-sm text-muted-foreground mt-1 ml-6 line-clamp-2">{col.description}</p>
+                            {group.description && (
+                              <p className="text-sm text-muted-foreground mt-2">{group.description}</p>
                             )}
                           </div>
-                          <div className="flex gap-2 ml-3 shrink-0">
+                          <div className="flex gap-2 shrink-0">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => startEditCollection(col)}
+                              onClick={() => startEditCollection(group)}
                               className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
                             >
                               <Edit className="h-4 w-4" />
@@ -1278,19 +1404,65 @@ const Admin = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => deleteCollection(col.id, col.name)}
+                              onClick={() => deleteCollection(group.id, group.name)}
                               className="border-destructive text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+
+                        <div className="rounded-lg bg-muted/40 p-4">
+                          <p className="text-sm font-medium text-reforma-brown mb-3">Sub-collections under {group.name}</p>
+                          {group.children.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No sub-collections yet.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {group.children.map((child) => (
+                                <div
+                                  key={child.id}
+                                  className={`flex items-start justify-between gap-4 rounded-lg border bg-background p-3 ${editingCollection === child.id ? 'border-reforma-brown' : 'border-border'}`}
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <FolderOpen className="h-4 w-4 text-reforma-brown shrink-0" />
+                                      <h5 className="font-medium text-reforma-brown truncate">{child.name}</h5>
+                                      <Badge variant="outline" className="text-xs">Sub-collection</Badge>
+                                      {editingCollection === child.id && <Badge variant="secondary" className="text-xs">Editing</Badge>}
+                                    </div>
+                                    {child.description && (
+                                      <p className="text-sm text-muted-foreground mt-1">{child.description}</p>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2 shrink-0">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => startEditCollection(child)}
+                                      className="border-reforma-brown text-reforma-brown hover:bg-reforma-brown/5"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => deleteCollection(child.id, child.name)}
+                                      className="border-destructive text-destructive hover:bg-destructive/10"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="orders">
