@@ -55,14 +55,23 @@ interface Product {
   [key: string]: any; // Allow any additional properties
 }
 
+interface Collection {
+  id: string;
+  name: string;
+  description?: string;
+  parent_id?: string | null;
+  parent_name?: string | null;
+}
+
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [collections, setCollections] = useState<{id: string; name: string; description?: string}[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   // Collection CRUD state
-  const [collectionForm, setCollectionForm] = useState({ name: '', description: '' });
+  const [collectionForm, setCollectionForm] = useState({ name: '', description: '', parentId: '' });
   const [editingCollection, setEditingCollection] = useState<string | null>(null);
   const [collectionLoading, setCollectionLoading] = useState(false);
+  const [selectedParentCollectionId, setSelectedParentCollectionId] = useState("");
   const [productForm, setProductForm] = useState({
     product_name: "",
     price: "",
@@ -98,6 +107,19 @@ const Admin = () => {
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
   const gsmOptions = [180, 210, 220, 240];
   const availableTags = ["New Arrival", "Winter Collection", "Discount", "Sale", "Limited Edition", "Bestseller"];
+  const topLevelCollections = collections.filter((collection) => !collection.parent_id);
+  const selectedParentCollection = topLevelCollections.find((collection) => collection.id === selectedParentCollectionId) ?? null;
+  const childCollections = selectedParentCollectionId
+    ? collections.filter((collection) => collection.parent_id === selectedParentCollectionId)
+    : [];
+  const availableParentCollections = topLevelCollections.filter((collection) => collection.id !== editingCollection);
+  const selectedSubCollectionId = childCollections.find((collection) => collection.name === productForm.collection)?.id ?? "__main__";
+  const collectionRows = topLevelCollections.flatMap((collection) => [
+    { ...collection, level: 0 },
+    ...collections
+      .filter((candidate) => candidate.parent_id === collection.id)
+      .map((candidate) => ({ ...candidate, level: 1 })),
+  ]);
 
   // Database health check
   const checkDatabaseHealth = async () => {
@@ -267,7 +289,7 @@ const Admin = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/collections`);
       const data = await res.json();
-      setCollections(Array.isArray(data) ? data : []);
+      setCollections(Array.isArray(data) ? (data as Collection[]) : []);
     } catch (error) {
       console.error('Error fetching collections:', error);
     }
@@ -278,16 +300,22 @@ const Admin = () => {
     if (!collectionForm.name.trim()) return;
     setCollectionLoading(true);
     try {
-      const url = editingCollection ? `/api/collections/${editingCollection}` : '/api/collections';
+      const url = editingCollection
+        ? `${API_BASE_URL}/api/collections/${editingCollection}`
+        : `${API_BASE_URL}/api/collections`;
       const method = editingCollection ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: collectionForm.name.trim(), description: collectionForm.description.trim() || undefined }),
+        body: JSON.stringify({
+          name: collectionForm.name.trim(),
+          description: collectionForm.description.trim() || undefined,
+          parentId: collectionForm.parentId || undefined,
+        }),
       });
       if (!res.ok) throw new Error((await res.json()).message || 'Operation failed');
       toast({ title: editingCollection ? 'Collection updated!' : 'Collection created!', description: `"${collectionForm.name}" saved successfully.` });
-      setCollectionForm({ name: '', description: '' });
+      setCollectionForm({ name: '', description: '', parentId: '' });
       setEditingCollection(null);
       fetchCollections();
     } catch (error: any) {
@@ -327,14 +355,14 @@ const Admin = () => {
     }
   };
 
-  const startEditCollection = (col: {id: string; name: string; description?: string}) => {
+  const startEditCollection = (col: Collection) => {
     setEditingCollection(col.id);
-    setCollectionForm({ name: col.name, description: col.description || '' });
+    setCollectionForm({ name: col.name, description: col.description || '', parentId: col.parent_id || '' });
   };
 
   const cancelEditCollection = () => {
     setEditingCollection(null);
-    setCollectionForm({ name: '', description: '' });
+    setCollectionForm({ name: '', description: '', parentId: '' });
   };
 
   const fetchStats = async () => {
@@ -431,7 +459,9 @@ const Admin = () => {
         images: productForm.images
       };
 
-      const url = editingProduct ? `/api/products/${editingProduct}` : '/api/products';
+      const url = editingProduct
+        ? `${API_BASE_URL}/api/products/${editingProduct}`
+        : `${API_BASE_URL}/api/products`;
       const method = editingProduct ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -461,6 +491,8 @@ const Admin = () => {
   };
 
   const editProduct = (product: Product) => {
+    const matchedCollection = collections.find((collection) => collection.name === (product.collection || ''));
+    setSelectedParentCollectionId(matchedCollection?.parent_id || matchedCollection?.id || '');
     setProductForm({
       product_name: product.product_name || "",
       price: (product.price || 0).toString(),
@@ -478,6 +510,7 @@ const Admin = () => {
   };
 
   const resetForm = () => {
+    setSelectedParentCollectionId("");
     setProductForm({
       product_name: "",
       price: "",
@@ -788,17 +821,28 @@ const Admin = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="collection">Collection</Label>
+                      <Label htmlFor="collection-parent">Main Collection</Label>
                       <Select 
-                        value={productForm.collection} 
-                        onValueChange={(value) => setProductForm(prev => ({ ...prev, collection: value }))}
+                        value={selectedParentCollectionId || "__none__"}
+                        onValueChange={(value) => {
+                          if (value === "__none__") {
+                            setSelectedParentCollectionId("");
+                            setProductForm(prev => ({ ...prev, collection: "" }));
+                            return;
+                          }
+
+                          const mainCollection = topLevelCollections.find((collection) => collection.id === value);
+                          setSelectedParentCollectionId(value);
+                          setProductForm(prev => ({ ...prev, collection: mainCollection?.name || "" }));
+                        }}
                       >
-                        <SelectTrigger className="input-reforma">
-                          <SelectValue placeholder="Select collection" />
+                        <SelectTrigger id="collection-parent" className="input-reforma">
+                          <SelectValue placeholder="Select main collection" />
                         </SelectTrigger>
                         <SelectContent>
-                          {collections.map(col => (
-                            <SelectItem key={col.id} value={col.name}>
+                          <SelectItem value="__none__">No collection</SelectItem>
+                          {topLevelCollections.map(col => (
+                            <SelectItem key={col.id} value={col.id}>
                               {col.name}
                             </SelectItem>
                           ))}
@@ -808,6 +852,41 @@ const Admin = () => {
                         <p className="text-xs text-amber-600 mt-1">? No collections yet � create one in the Collections tab first.</p>
                       )}
                     </div>
+
+                    {selectedParentCollectionId && childCollections.length > 0 && (
+                      <div>
+                        <Label htmlFor="sub-collection">Sub-Collection</Label>
+                        <Select
+                          value={selectedSubCollectionId}
+                          onValueChange={(value) => {
+                            if (value === "__main__") {
+                              setProductForm(prev => ({ ...prev, collection: selectedParentCollection?.name || "" }));
+                              return;
+                            }
+
+                            const subCollection = childCollections.find((collection) => collection.id === value);
+                            if (subCollection) {
+                              setProductForm(prev => ({ ...prev, collection: subCollection.name }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger id="sub-collection" className="input-reforma">
+                            <SelectValue placeholder="Select sub-collection" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__main__">Use main collection only</SelectItem>
+                            {childCollections.map((collection) => (
+                              <SelectItem key={collection.id} value={collection.id}>
+                                {collection.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Choose a sub-collection only when the product should live under a specific drop inside {selectedParentCollection?.name}.
+                        </p>
+                      </div>
+                    )}
 
                     <div>
                       <Label htmlFor="image_url">Image URL or Upload</Label>
@@ -1083,6 +1162,31 @@ const Admin = () => {
                       />
                     </div>
                     <div>
+                      <Label htmlFor="col-parent">Parent Collection</Label>
+                      <Select
+                        value={collectionForm.parentId || "__root__"}
+                        onValueChange={(value) => setCollectionForm(prev => ({
+                          ...prev,
+                          parentId: value === "__root__" ? '' : value,
+                        }))}
+                      >
+                        <SelectTrigger id="col-parent" className="input-reforma">
+                          <SelectValue placeholder="Top-level collection" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__root__">Top-level collection</SelectItem>
+                          {availableParentCollections.map((collection) => (
+                            <SelectItem key={collection.id} value={collection.id}>
+                              {collection.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Use this when creating a sub-collection such as Summer Drop 01 inside a main collection like Drop 01.
+                      </p>
+                    </div>
+                    <div>
                       <Label htmlFor="col-desc">Description (optional)</Label>
                       <Textarea
                         id="col-desc"
@@ -1135,23 +1239,29 @@ const Admin = () => {
                     </div>
                   ) : (
                     <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                      {collections.map(col => (
+                      {collectionRows.map(col => (
                         <div
                           key={col.id}
                           className={`flex items-start justify-between p-4 rounded-lg border transition-colors ${
                             editingCollection === col.id
                               ? 'border-reforma-brown bg-reforma-brown/5'
                               : 'border-border hover:border-reforma-brown/40'
-                          }`}
+                          } ${col.level === 1 ? 'ml-6 border-l-4 border-l-reforma-brown/30' : ''}`}
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <FolderOpen className="h-4 w-4 text-reforma-brown shrink-0" />
                               <h4 className="font-semibold text-reforma-brown truncate">{col.name}</h4>
+                              {col.level === 1 && (
+                                <Badge variant="outline" className="text-xs">Sub-collection</Badge>
+                              )}
                               {editingCollection === col.id && (
                                 <Badge variant="secondary" className="text-xs">Editing</Badge>
                               )}
                             </div>
+                            {col.parent_name && (
+                              <p className="text-xs text-muted-foreground mt-1 ml-6">Inside {col.parent_name}</p>
+                            )}
                             {col.description && (
                               <p className="text-sm text-muted-foreground mt-1 ml-6 line-clamp-2">{col.description}</p>
                             )}

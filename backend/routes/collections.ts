@@ -3,11 +3,71 @@ import pool from '../db.js';
 
 const router = Router();
 
+let collectionsSchemaReady: Promise<void> | null = null;
+
+async function ensureCollectionsSchema() {
+  if (!collectionsSchemaReady) {
+    collectionsSchemaReady = (async () => {
+      await pool.query(`
+        ALTER TABLE collections
+        ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES collections(id) ON DELETE SET NULL
+      `);
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_collections_parent_id
+        ON collections(parent_id)
+      `);
+    })().catch((error) => {
+      collectionsSchemaReady = null;
+      throw error;
+    });
+  }
+
+  await collectionsSchemaReady;
+}
+
+async function validateParentCollection(parentId?: string | null) {
+  if (!parentId) {
+    return { parentId: null as string | null };
+  }
+
+  const { rows } = await pool.query(
+    'SELECT id, parent_id FROM collections WHERE id = $1',
+    [parentId],
+  );
+
+  if (rows.length === 0) {
+    return { error: 'Parent collection not found' };
+  }
+
+  if (rows[0].parent_id) {
+    return { error: 'Only top-level collections can be selected as parents' };
+  }
+
+  return { parentId };
+}
+
+router.use(async (_req, _res, next) => {
+  try {
+    await ensureCollectionsSchema();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ── GET /api/collections ─────────────────────────────────────────────────────
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM collections ORDER BY name ASC',
+      `SELECT
+         c.*,
+         parent.name AS parent_name
+       FROM collections c
+       LEFT JOIN collections parent ON parent.id = c.parent_id
+       ORDER BY
+         CASE WHEN c.parent_id IS NULL THEN 0 ELSE 1 END,
+         COALESCE(parent.name, c.name) ASC,
+         c.name ASC`,
     );
     return res.status(200).json(rows);
   } catch (err: any) {
@@ -55,18 +115,27 @@ router.post('/sync-products', async (_req: Request, res: Response) => {
 
 // ── POST /api/collections ────────────────────────────────────────────────────
 router.post('/', async (req: Request, res: Response) => {
-  const { name, description } = req.body as { name: string; description?: string };
+  const { name, description, parentId } = req.body as {
+    name: string;
+    description?: string;
+    parentId?: string | null;
+  };
 
   if (!name) {
     return res.status(400).json({ message: 'name is required' });
   }
 
   try {
+    const parentValidation = await validateParentCollection(parentId);
+    if (parentValidation.error) {
+      return res.status(400).json({ message: parentValidation.error });
+    }
+
     const { rows } = await pool.query(
-      `INSERT INTO collections (name, description)
-       VALUES ($1, $2)
+      `INSERT INTO collections (name, description, parent_id)
+       VALUES ($1, $2, $3)
        RETURNING *`,
-      [name, description ?? null],
+      [name, description ?? null, parentValidation.parentId],
     );
     return res.status(201).json(rows[0]);
   } catch (err: any) {
@@ -81,10 +150,18 @@ router.post('/', async (req: Request, res: Response) => {
 // Also cascades the new name to all products that carried the old name.
 router.put('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, description } = req.body as { name?: string; description?: string };
+  const { name, description, parentId } = req.body as {
+    name?: string;
+    description?: string;
+    parentId?: string | null;
+  };
 
   if (!name) {
     return res.status(400).json({ message: 'name is required' });
+  }
+
+  if (parentId === id) {
+    return res.status(400).json({ message: 'Collection cannot be its own parent' });
   }
 
   const client = await pool.connect();
@@ -102,13 +179,40 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
     const oldName = existing[0].name;
 
+    if (parentId) {
+      const { rows: parentRows } = await client.query(
+        'SELECT id, parent_id FROM collections WHERE id = $1',
+        [parentId],
+      );
+
+      if (parentRows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Parent collection not found' });
+      }
+
+      if (parentRows[0].parent_id) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Only top-level collections can be selected as parents' });
+      }
+
+      const { rows: childRows } = await client.query(
+        'SELECT COUNT(*)::int AS count FROM collections WHERE parent_id = $1',
+        [id],
+      );
+
+      if (childRows[0].count > 0) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ message: 'Collections with sub-collections cannot be nested under another collection' });
+      }
+    }
+
     // 2️⃣  Rename the collection
     const { rows } = await client.query(
       `UPDATE collections
-         SET name = $1, description = $2, updated_at = NOW()
-       WHERE id = $3
+         SET name = $1, description = $2, parent_id = $3, updated_at = NOW()
+       WHERE id = $4
        RETURNING *`,
-      [name, description ?? null, id],
+      [name, description ?? null, parentId ?? null, id],
     );
 
     // 3️⃣  Cascade: update all products that had the old collection name
@@ -154,6 +258,16 @@ router.delete('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Collection not found' });
     }
     const colName = existing[0].name;
+
+    const { rows: childRows } = await client.query(
+      'SELECT COUNT(*)::int AS count FROM collections WHERE parent_id = $1',
+      [id],
+    );
+
+    if (childRows[0].count > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message: 'Delete or move sub-collections before deleting this collection' });
+    }
 
     // 2️⃣  Clear collection field on all affected products (set to empty string)
     const { rowCount: affectedProducts } = await client.query(

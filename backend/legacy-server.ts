@@ -81,7 +81,7 @@ app.post('/api/auth/admin-login', async (req, res) => {
     }
 
     return res.status(401).json({ message: 'Invalid admin credentials' });
-  } catch (error) {
+  } catch (error: any) {
     return res.status(500).json({ message: 'Internal server error', details: error.message });
   }
 });
