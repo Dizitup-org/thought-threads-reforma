@@ -350,6 +350,10 @@ const Admin = () => {
 
   const handleSubCollectionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!subCollectionForm.parentId) {
+      toast({ title: 'Parent collection required', description: 'Please select a parent collection before creating a sub-collection.', variant: 'destructive' });
+      return;
+    }
     await submitCollection(subCollectionForm, 'sub');
   };
 
