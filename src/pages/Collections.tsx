@@ -13,12 +13,8 @@ interface Product {
   collection: string;
 }
 
-interface Collection {
-  id: string;
-  name: string;
-  description: string;
-  products: Product[];
-}
+
+
 
 // ── Skeleton card for loading state ─────────────────────────────────────────
 const CollectionSkeleton = ({ index }: { index: number }) => (
@@ -112,9 +108,175 @@ const LoadingView = () => (
   </div>
 );
 
+interface RawCollection {
+  id: string;
+  name: string;
+  description: string | null;
+  parent_id: string | null;
+  parent_name: string | null;
+}
+
+interface CollectionNode {
+  id: string;
+  name: string;
+  description: string;
+  parent_id: string | null;
+  products: Product[];
+  children: CollectionNode[];
+}
+
+// ── Build a recursive tree from a flat list ──────────────────────────────────
+function buildTree(flat: RawCollection[], products: Product[]): CollectionNode[] {
+  const map = new Map<string, CollectionNode>();
+
+  // First pass: create nodes
+  for (const col of flat) {
+    map.set(col.id, {
+      id: col.id,
+      name: col.name,
+      description: col.description || "",
+      parent_id: col.parent_id,
+      products: products.filter((p) => p.collection === col.name),
+      children: [],
+    });
+  }
+
+  const roots: CollectionNode[] = [];
+
+  // Second pass: wire children to parents
+  for (const node of map.values()) {
+    if (node.parent_id && map.has(node.parent_id)) {
+      map.get(node.parent_id)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  return roots;
+}
+
+// ── Recursive collection card ─────────────────────────────────────────────────
+interface CollectionCardProps {
+  node: CollectionNode;
+  index: number;
+  depth?: number;
+}
+
+const CollectionCard = ({ node, index, depth = 0 }: CollectionCardProps) => (
+  <motion.div
+    key={node.id}
+    initial={{ opacity: 0, y: 30 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: index * 0.08 }}
+    className={`rounded-2xl border border-border/60 bg-card shadow-md overflow-hidden flex flex-col hover:shadow-xl hover:border-reforma-brown/30 transition-all duration-300 ${depth > 0 ? "ml-6 border-l-4 border-l-reforma-brown/20" : ""}`}
+  >
+    {/* Card Header */}
+    <div className="p-6 border-b border-border/40">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {depth > 0 && (
+            <span className="text-xs font-semibold text-reforma-brown/50 tracking-widest uppercase">
+              {"›".repeat(depth)}&nbsp;
+            </span>
+          )}
+          <h2 className="serif-heading text-2xl text-reforma-brown font-semibold">
+            {node.name}
+          </h2>
+        </div>
+        <Badge
+          variant="outline"
+          className="border-reforma-brown/30 text-reforma-brown px-3 py-1"
+        >
+          {node.products.length}{" "}
+          {node.products.length === 1 ? "item" : "items"}
+        </Badge>
+      </div>
+      {node.description && (
+        <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+          {node.description}
+        </p>
+      )}
+    </div>
+
+    {/* Product preview images */}
+    {node.products.length > 0 ? (
+      <div className="p-4 flex-1">
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {node.products.slice(0, 3).map((product) => (
+            <Link key={product.id} to={`/product/${product.id}`} className="block">
+              <motion.div
+                className="aspect-square overflow-hidden rounded-lg bg-muted cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.25 }}
+              >
+                {product.images && product.images.length > 0 ? (
+                  <img
+                    src={product.images[0]}
+                    alt={product.product_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="h-8 w-8 text-muted-foreground/40" />
+                  </div>
+                )}
+              </motion.div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Product list */}
+        <div className="space-y-2">
+          {node.products.map((product) => (
+            <Link
+              key={product.id}
+              to={`/product/${product.id}`}
+              className="flex justify-between items-center text-sm py-1.5 px-2 rounded-lg hover:bg-muted/60 transition-colors group"
+            >
+              <span className="font-medium text-reforma-brown group-hover:underline underline-offset-2">
+                {product.product_name}
+              </span>
+              <span className="text-reforma-brown font-bold">
+                ₹{Number(product.price).toFixed(0)}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div className="flex-1 flex flex-col items-center justify-center py-10 text-muted-foreground/60">
+        <Package className="h-10 w-10 mb-2" />
+        <p className="text-sm">No products yet</p>
+      </div>
+    )}
+
+    {/* Explore button */}
+    <div className="p-5 pt-0">
+      <Link to={`/shop?collection=${encodeURIComponent(node.name)}`} className="block">
+        <Button className="w-full luxury-btn-primary py-3 font-semibold tracking-wide group">
+          Explore {node.name}
+          <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </Button>
+      </Link>
+    </div>
+
+    {/* Sub-collections — rendered recursively */}
+    {node.children.length > 0 && (
+      <div className="px-6 pb-6 space-y-4 border-t border-border/30 pt-4">
+        <p className="text-xs font-semibold text-reforma-brown/60 tracking-widest uppercase">
+          Sub-collections
+        </p>
+        {node.children.map((child, ci) => (
+          <CollectionCard key={child.id} node={child} index={ci} depth={depth + 1} />
+        ))}
+      </div>
+    )}
+  </motion.div>
+);
+
 // ── Main Component ────────────────────────────────────────────────────────────
 const Collections = () => {
-  const [collections, setCollections] = useState<Collection[]>([]);
+  const [tree, setTree] = useState<CollectionNode[]>([]);
   const [orphanedProducts, setOrphanedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -135,44 +297,30 @@ const Collections = () => {
       if (!collectionsRes.ok) throw new Error("Failed to fetch collections");
       if (!productsRes.ok) throw new Error("Failed to fetch products");
 
-      const [collectionsData, productsData] = await Promise.all([
+      const [collectionsData, productsData]: [RawCollection[], any[]] = await Promise.all([
         collectionsRes.json(),
         productsRes.json(),
       ]);
 
-      // Group products by collection name — use correct DB field names
-      const knownNames = new Set((collectionsData || []).map((c: any) => c.name));
+      const allProducts: Product[] = (productsData || []).map((p: any) => ({
+        id: p.id,
+        product_name: p.product_name,
+        price: p.price,
+        images: p.images,
+        collection: p.collection,
+      }));
 
-      const collectionsWithProducts: Collection[] = (collectionsData || []).map(
-        (col: any) => ({
-          id: col.id,
-          name: col.name,
-          description: col.description || "",
-          products: (productsData || [])
-            .filter((p: any) => p.collection === col.name)
-            .map((p: any) => ({
-              id: p.id,
-              product_name: p.product_name,
-              price: p.price,
-              images: p.images,
-              collection: p.collection,
-            })),
-        })
+      const knownNames = new Set((collectionsData || []).map((c) => c.name));
+
+      // Build recursive tree from flat list
+      const collectionTree = buildTree(collectionsData || [], allProducts);
+
+      // Orphaned products — collection string doesn't match any known collection
+      const orphans = allProducts.filter(
+        (p) => p.collection && p.collection.trim() !== "" && !knownNames.has(p.collection)
       );
 
-      // Find orphaned products — those whose collection string doesn't match any collection record
-      // (stale data from before cascade fix, or manually entered strings)
-      const orphans: Product[] = (productsData || [])
-        .filter((p: any) => p.collection && p.collection.trim() !== '' && !knownNames.has(p.collection))
-        .map((p: any) => ({
-          id: p.id,
-          product_name: p.product_name,
-          price: p.price,
-          images: p.images,
-          collection: p.collection,
-        }));
-
-      setCollections(collectionsWithProducts);
+      setTree(collectionTree);
       setOrphanedProducts(orphans);
     } catch (error) {
       console.error("Error fetching collections:", error);
@@ -203,110 +351,14 @@ const Collections = () => {
           </p>
         </motion.div>
 
-        {/* Collections Grid */}
+        {/* Collections Tree */}
         <AnimatePresence>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-            {collections.map((collection, index) => (
-              <motion.div
-                key={collection.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="rounded-2xl border border-border/60 bg-card shadow-md overflow-hidden flex flex-col hover:shadow-xl hover:border-reforma-brown/30 transition-all duration-300"
-              >
-                {/* Card Header */}
-                <div className="p-6 border-b border-border/40">
-                  <div className="flex items-center justify-between">
-                    <h2 className="serif-heading text-2xl text-reforma-brown font-semibold">
-                      {collection.name}
-                    </h2>
-                    <Badge
-                      variant="outline"
-                      className="border-reforma-brown/30 text-reforma-brown px-3 py-1"
-                    >
-                      {collection.products.length}{" "}
-                      {collection.products.length === 1 ? "item" : "items"}
-                    </Badge>
-                  </div>
-                  {collection.description && (
-                    <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                      {collection.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Product preview images */}
-                {collection.products.length > 0 ? (
-                  <div className="p-4 flex-1">
-                    <div className="grid grid-cols-3 gap-2 mb-4">
-                      {collection.products.slice(0, 3).map((product) => (
-                        <Link
-                          key={product.id}
-                          to={`/product/${product.id}`}
-                          className="block"
-                        >
-                          <motion.div
-                            className="aspect-square overflow-hidden rounded-lg bg-muted cursor-pointer"
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.25 }}
-                          >
-                            {product.images && product.images.length > 0 ? (
-                              <img
-                                src={product.images[0]}
-                                alt={product.product_name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Package className="h-8 w-8 text-muted-foreground/40" />
-                              </div>
-                            )}
-                          </motion.div>
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* Product list */}
-                    <div className="space-y-2">
-                      {collection.products.map((product) => (
-                        <Link
-                          key={product.id}
-                          to={`/product/${product.id}`}
-                          className="flex justify-between items-center text-sm py-1.5 px-2 rounded-lg hover:bg-muted/60 transition-colors group"
-                        >
-                          <span className="font-medium text-reforma-brown group-hover:underline underline-offset-2">
-                            {product.product_name}
-                          </span>
-                          <span className="text-reforma-brown font-bold">
-                            ₹{Number(product.price).toFixed(0)}
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center py-10 text-muted-foreground/60">
-                    <Package className="h-10 w-10 mb-2" />
-                    <p className="text-sm">No products yet</p>
-                  </div>
-                )}
-
-                {/* Explore button — properly linked to filtered shop */}
-                <div className="p-5 pt-0">
-                  <Link
-                    to={`/shop?collection=${encodeURIComponent(collection.name)}`}
-                    className="block"
-                  >
-                    <Button className="w-full luxury-btn-primary py-3 font-semibold tracking-wide group">
-                      Explore {collection.name}
-                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </Button>
-                  </Link>
-                </div>
-              </motion.div>
+            {tree.map((node, index) => (
+              <CollectionCard key={node.id} node={node} index={index} depth={0} />
             ))}
 
-            {collections.length === 0 && (
+            {tree.length === 0 && (
               <motion.div
                 className="col-span-2 text-center py-20"
                 initial={{ opacity: 0 }}
@@ -425,4 +477,4 @@ const Collections = () => {
   );
 };
 
-export default Collections;
+export default Collections;

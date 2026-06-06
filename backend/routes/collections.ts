@@ -25,13 +25,38 @@ async function ensureCollectionsSchema() {
   await collectionsSchemaReady;
 }
 
-async function validateParentCollection(parentId?: string | null) {
+/**
+ * Walks up the ancestry chain starting at `ancestorCandidateId`.
+ * Returns true if `targetId` is found anywhere in that chain,
+ * which would mean making `targetId` a child of `ancestorCandidateId` creates a cycle.
+ */
+async function wouldCreateCycle(targetId: string, ancestorCandidateId: string): Promise<boolean> {
+  let currentId: string | null = ancestorCandidateId;
+  const visited = new Set<string>();
+
+  while (currentId) {
+    if (visited.has(currentId)) break; // guard against corrupt data loops
+    visited.add(currentId);
+
+    if (currentId === targetId) return true; // cycle detected
+
+    const { rows } = await pool.query(
+      'SELECT parent_id FROM collections WHERE id = $1',
+      [currentId],
+    );
+    currentId = rows.length > 0 ? (rows[0].parent_id ?? null) : null;
+  }
+
+  return false;
+}
+
+async function validateParentCollection(parentId?: string | null, childId?: string | null) {
   if (!parentId) {
     return { parentId: null as string | null };
   }
 
   const { rows } = await pool.query(
-    'SELECT id, parent_id FROM collections WHERE id = $1',
+    'SELECT id FROM collections WHERE id = $1',
     [parentId],
   );
 
@@ -39,8 +64,9 @@ async function validateParentCollection(parentId?: string | null) {
     return { error: 'Parent collection not found' };
   }
 
-  if (rows[0].parent_id) {
-    return { error: 'Only top-level collections can be selected as parents' };
+  // Prevent circular references (unlimited depth is allowed otherwise)
+  if (childId && await wouldCreateCycle(childId, parentId)) {
+    return { error: 'Cannot assign a collection as its own ancestor (circular reference)' };
   }
 
   return { parentId };
@@ -126,7 +152,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const parentValidation = await validateParentCollection(parentId);
+    const parentValidation = await validateParentCollection(parentId, undefined);
     if (parentValidation.error) {
       return res.status(400).json({ message: parentValidation.error });
     }
@@ -181,7 +207,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     if (parentId) {
       const { rows: parentRows } = await client.query(
-        'SELECT id, parent_id FROM collections WHERE id = $1',
+        'SELECT id FROM collections WHERE id = $1',
         [parentId],
       );
 
@@ -190,19 +216,10 @@ router.put('/:id', async (req: Request, res: Response) => {
         return res.status(400).json({ message: 'Parent collection not found' });
       }
 
-      if (parentRows[0].parent_id) {
+      // Only block actual circular references — unlimited nesting depth is supported
+      if (await wouldCreateCycle(id, parentId)) {
         await client.query('ROLLBACK');
-        return res.status(400).json({ message: 'Only top-level collections can be selected as parents' });
-      }
-
-      const { rows: childRows } = await client.query(
-        'SELECT COUNT(*)::int AS count FROM collections WHERE parent_id = $1',
-        [id],
-      );
-
-      if (childRows[0].count > 0) {
-        await client.query('ROLLBACK');
-        return res.status(409).json({ message: 'Collections with sub-collections cannot be nested under another collection' });
+        return res.status(400).json({ message: 'Cannot assign a collection as its own ancestor (circular reference)' });
       }
     }
 

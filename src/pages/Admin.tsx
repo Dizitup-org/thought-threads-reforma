@@ -113,7 +113,8 @@ const Admin = () => {
   const childCollections = selectedParentCollectionId
     ? collections.filter((collection) => collection.parent_id === selectedParentCollectionId)
     : [];
-  const availableParentCollections = topLevelCollections.filter((collection) => collection.id !== editingCollection);
+  // All collections except the one being edited (used in edit form parent dropdown)
+  const availableParentCollections = collections.filter((collection) => collection.id !== editingCollection);
   const selectedSubCollectionId = childCollections.find((collection) => collection.name === productForm.collection)?.id ?? "__main__";
   const collectionGroups = topLevelCollections.map((collection) => ({
     ...collection,
@@ -1214,7 +1215,9 @@ const Admin = () => {
                             <SelectItem value="__root__">No parent collection</SelectItem>
                             {availableParentCollections.map((collection) => (
                               <SelectItem key={collection.id} value={collection.id}>
-                                {collection.name}
+                                {collection.parent_name
+                                  ? `${collection.parent_name} › ${collection.name}`
+                                  : collection.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1308,11 +1311,14 @@ const Admin = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__select__">Choose parent collection</SelectItem>
-                          {topLevelCollections.map((collection) => (
-                            <SelectItem key={collection.id} value={collection.id}>
-                              {collection.name}
-                            </SelectItem>
-                          ))}
+                          {collections
+                            .map((collection) => (
+                              <SelectItem key={collection.id} value={collection.id}>
+                                {collection.parent_name
+                                  ? `${collection.parent_name} › ${collection.name}`
+                                  : collection.name}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground mt-1">
